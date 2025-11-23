@@ -1,0 +1,127 @@
+/**
+ * Core Philosophy: This ruleset enforces a strict user-ownership model. All user-generated
+ * content, including drafts, post states, and automation logs, is stored in subcollections
+ * under that user's specific document. This ensures that users can only access and manage
+ * their own data, providing strong data privacy and isolation by default.
+ *
+ * Data Structure: The data is organized hierarchically, starting with a top-level '/users'
+ * collection. Each user document, identified by their UID, serves as the root for their
+ * private data trees, which include '/drafts', '/postStates', and '/automationLogs' subcollections.
+ * This structure is fundamental to the security model, as ownership is determined by the document path.
+ *
+ * Key Security Decisions:
+ * - User Enumeration Disabled: Listing documents in the top-level '/users' collection is explicitly
+ *   disallowed to protect user privacy and prevent scraping of user information.
+ * - Path-Based Security: Access to all subcollection documents is primarily controlled by matching
+ *   the authenticated user's ID with the '{userId}' wildcard in the path. This is a highly
+ *   performant and secure method.
+ * - Default Deny: Any operation not explicitly granted is denied. There are no public write
+ *   permissions.
+ *
+ * Denormalization for Authorization: The '/drafts' documents contain a denormalized 'userId' field.
+ * This is used during document creation and updates to enforce relational integrity, ensuring that a
+ * draft created under a user's path also contains their ID internally. This prevents data misattribution.
+ * For other subcollections like 'postStates' and 'automationLogs', authorization relies solely on the
+ * document path, which is secure and sufficient for this ownership model.
+ *
+ * Structural Segregation: The design inherently separates each user's private data from others by
+ * nesting it within their own document tree (e.g., /users/{userId}/drafts/{draftId}). This pattern
+ * simplifies security rules and makes it impossible for users to query or list data belonging to others.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions for readable, secure, and maintainable rules.
+
+    /**
+     * Checks if a user is authenticated.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * Validates that the requesting user's UID matches the document's owner ID.
+     * This is the primary function for enforcing the user-ownership model.
+     * @param userId The UID of the user to check for ownership.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * Ensures an update or delete operation targets an existing document
+     * and is performed by the document's owner. This prevents unauthorized
+     * writes and protects against operations on non-existent paths.
+     * @param userId The UID of the user to check for ownership.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+
+    /**
+     * @description Manages user profile documents. Only the user themselves can create,
+     * read, update, or delete their own profile. Listing all users is forbidden.
+     * @path /users/{userId}
+     * @allow (get) An authenticated user with UID 'user123' requests their own document at '/users/user123'.
+     * @deny (list) Any user, authenticated or not, attempts to list documents in the '/users' collection.
+     * @principle Restricts access to a user's own data tree and prevents user enumeration for privacy.
+     */
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow list: if false;
+      allow create: if isOwner(userId) && request.resource.data.id == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow delete: if isExistingOwner(userId);
+
+      /**
+       * @description Secures user-created draft posts. A user can perform all operations
+       * on their own drafts, but cannot access anyone else's.
+       * @path /users/{userId}/drafts/{draftId}
+       * @allow (create) An authenticated user 'user123' creates a new draft at '/users/user123/drafts/draft_abc'.
+       * @deny (get) User 'user456' attempts to read a draft at '/users/user123/drafts/draft_abc'.
+       * @principle Enforces strict document ownership within a user's private subcollection.
+       */
+      match /drafts/{draftId} {
+        allow get: if isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && request.resource.data.userId == userId;
+        allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.id;
+        allow delete: if isExistingOwner(userId);
+      }
+
+      /**
+       * @description Secures the state of a user's posts. Only the owner of the parent
+       * user document can manage these state documents.
+       * @path /users/{userId}/postStates/{postStateId}
+       * @allow (list) An authenticated user 'user123' lists all their post states at '/users/user123/postStates'.
+       * @deny (update) User 'user456' attempts to modify a post state at '/users/user123/postStates/state_abc'.
+       * @principle Path-based security ensures that subcollection data is owned by the parent document's owner.
+       */
+      match /postStates/{postStateId} {
+        allow get: if isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId);
+        allow update: if isExistingOwner(userId);
+        allow delete: if isExistingOwner(userId);
+      }
+
+      /**
+       * @description Secures automation logs related to a user's posts. Only the user
+       * can read, create, or manage their own logs.
+       * @path /users/{userId}/automationLogs/{automationLogId}
+       * @allow (get) An authenticated user 'user123' reads a log at '/users/user123/automationLogs/log_abc'.
+       * @deny (delete) User 'user456' attempts to delete a log at '/users/user123/automationLogs/log_abc'.
+       * @principle Path-based security ensures that subcollection data is owned by the parent document's owner.
+       */
+      match /automationLogs/{automationLogId} {
+        allow get: if isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId);
+        allow update: if isExistingOwner(userId);
+        allow delete: if isExistingOwner(userId);
+      }
+    }
+  }
+}

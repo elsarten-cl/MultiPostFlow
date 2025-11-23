@@ -1,0 +1,259 @@
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user of the MultiPostFlow application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user entity."
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address of the user.",
+          "format": "email"
+        },
+        "name": {
+          "type": "string",
+          "description": "Full name of the user."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the user account was created.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "email",
+        "name",
+        "createdAt"
+      ]
+    },
+    "Draft": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Draft",
+      "type": "object",
+      "description": "Represents a draft post created by a user.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the draft entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N Draft)"
+        },
+        "title": {
+          "type": "string",
+          "description": "Title of the draft post."
+        },
+        "content": {
+          "type": "string",
+          "description": "Content of the draft post."
+        },
+        "platforms": {
+          "type": "array",
+          "description": "Array of platforms the draft is intended for (e.g., Facebook, Instagram, WordPress).",
+          "items": {
+            "type": "string"
+          }
+        },
+        "mediaUrls": {
+          "type": "array",
+          "description": "Array of URLs for media (images, videos) associated with the draft.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the draft was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the draft was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "title",
+        "content",
+        "platforms",
+        "mediaUrls",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "PostState": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "PostState",
+      "type": "object",
+      "description": "Represents the state of a post (draft, approved, published, error).",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the post state entity."
+        },
+        "draftId": {
+          "type": "string",
+          "description": "Reference to Draft. (Relationship: Draft 1:1 PostState)"
+        },
+        "status": {
+          "type": "string",
+          "description": "Current status of the post (e.g., draft, approved, published, pending, error)."
+        },
+        "publishedUrls": {
+          "type": "array",
+          "description": "Array of URLs where the post was published.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "errorMessage": {
+          "type": "string",
+          "description": "Error message if the post failed to publish."
+        },
+        "lastUpdated": {
+          "type": "string",
+          "description": "Timestamp indicating the last time the post state was updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "draftId",
+        "status",
+        "lastUpdated"
+      ]
+    },
+    "AutomationLog": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "AutomationLog",
+      "type": "object",
+      "description": "Represents logs of automation processes (Make.com) for post processing and publishing.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the automation log entry."
+        },
+        "draftId": {
+          "type": "string",
+          "description": "Reference to Draft. (Relationship: Draft 1:N AutomationLog)"
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "Timestamp of when the automation event occurred.",
+          "format": "date-time"
+        },
+        "event": {
+          "type": "string",
+          "description": "Description of the automation event (e.g., image enhancement, media upload, status change)."
+        },
+        "details": {
+          "type": "string",
+          "description": "Detailed information about the automation event."
+        }
+      },
+      "required": [
+        "id",
+        "draftId",
+        "timestamp",
+        "event",
+        "details"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profiles. User documents are created upon user authentication and contain user information such as email, name, and creation timestamp.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/drafts/{draftId}",
+        "definition": {
+          "entityName": "Draft",
+          "schema": {
+            "$ref": "#/backend/entities/Draft"
+          },
+          "description": "Stores draft posts created by users. Includes denormalized 'userId' for authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user who owns the draft."
+            },
+            {
+              "name": "draftId",
+              "description": "The unique identifier for the draft post."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/postStates/{postStateId}",
+        "definition": {
+          "entityName": "PostState",
+          "schema": {
+            "$ref": "#/backend/entities/PostState"
+          },
+          "description": "Stores the state of a post (draft, approved, published, error). Includes denormalized 'userId' for authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user who owns the draft/post."
+            },
+            {
+              "name": "postStateId",
+              "description": "The unique identifier for the post state."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/automationLogs/{automationLogId}",
+        "definition": {
+          "entityName": "AutomationLog",
+          "schema": {
+            "$ref": "#/backend/entities/AutomationLog"
+          },
+          "description": "Stores logs of automation processes for post processing and publishing. Includes denormalized 'userId' for authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user who owns the draft/post."
+            },
+            {
+              "name": "automationLogId",
+              "description": "The unique identifier for the automation log entry."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore data structure is designed to support the MultiPostFlow application, emphasizing security, scalability, and debuggability by adhering to the principles of Authorization Independence, Clarity of Intent, DBAC (Database-Based Access Control), and QAPs (Rules are not Filters). Authorization Independence is achieved through denormalization, specifically by including the `userId` within the `/drafts/{draftId}` collection, which eliminates the need for `get()` calls in security rules when validating ownership. Structural Segregation is employed to separate user-specific data (drafts, post states, automation logs) into user-owned subcollections, ensuring consistent security postures within each collection. Access Modeling uses path-based ownership (`/users/{userId}/drafts/{draftId}`) to ensure secure and efficient access control for user-created drafts. This design supports QAPs by allowing secure listing of user-owned drafts based solely on the path and `request.auth.uid`, without needing to filter based on document content.\n\nEach entity has a unique ID, timestamp fields (`createdAt`, `updatedAt`, `lastUpdated`), and explicit state modeling using the `status` field in `PostState`. This enhances clarity and predictability. Denormalization of `userId` into child collections (Drafts, AutomationLogs, PostStates) enables atomic operations and eliminates hierarchical authorization dependencies."
+  }
+}
