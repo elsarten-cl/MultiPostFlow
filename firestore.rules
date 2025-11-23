@@ -30,6 +30,11 @@ service cloud.firestore {
     function isExistingOwner(userId) {
       return isOwner(userId) && resource != null;
     }
+    
+    function isAdmin() {
+      return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
 
     /**
      * Validates the structure and integrity of a user document upon creation.
@@ -43,7 +48,8 @@ service cloud.firestore {
                data.id == userId &&
                data.email == request.auth.token.email &&
                (!isAdminAttempt || (isAdminAttempt && isFirstAdmin)) &&
-               (data.role == 'user' || (data.role == 'admin' && isFirstAdmin));
+               (data.role == 'user' || (data.role == 'admin' && isFirstAdmin)) &&
+               data.type in ['revista', 'marketplace', 'ambos'];
     }
 
     /**
@@ -56,9 +62,9 @@ service cloud.firestore {
      */
     match /users/{userId} {
       allow get: if isOwner(userId);
-      allow list: if false;
+      allow list: if isAdmin();
       allow create: if isValidNewUser(userId);
-      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id && request.resource.data.role == resource.data.role;
+      allow update: if isExistingOwner(userId) || isAdmin();
       allow delete: if isExistingOwner(userId);
 
       /**

@@ -73,6 +73,7 @@ async function createUserDocument(
     email: user.email,
     name: data.name || user.displayName || user.email?.split('@')[0] || 'Usuario',
     role: isAdmin ? 'admin' : 'user',
+    type: 'revista',
     createdAt: serverTimestamp(),
   };
 

@@ -25,13 +25,17 @@ import {
 } from './ui/sidebar';
 import { Icons } from './icons';
 import { cn } from '@/lib/utils';
-import { Bot, Loader2 } from 'lucide-react';
+import { Bot, Loader2, Users } from 'lucide-react';
 import { useUser, useAuth } from '@/firebase';
 import { signOut } from 'firebase/auth';
 
 const navItems = [
   { href: '/', icon: Icons.Dashboard, label: 'Panel' },
   { href: '/posts/new', icon: Icons.NewPost, label: 'Nueva Publicación' },
+];
+
+const adminNavItems = [
+  { href: '/admin/users', icon: Users, label: 'Usuarios' },
 ];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -52,6 +56,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       </div>
     );
   }
+
+  const isAdmin = user.email === 'agencia@elsartenpro.com';
 
   return (
     <SidebarProvider>
@@ -84,6 +90,31 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 </SidebarMenuButton>
               </SidebarMenuItem>
             ))}
+             {isAdmin && (
+              <>
+                <SidebarMenuItem>
+                  <div className="my-2 border-t border-sidebar-border" />
+                </SidebarMenuItem>
+                {adminNavItems.map((item) => (
+                  <SidebarMenuItem key={item.href}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={pathname.startsWith(item.href)}
+                      className={cn(
+                        'justify-start',
+                        pathname.startsWith(item.href) &&
+                          'bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary'
+                      )}
+                    >
+                      <Link href={item.href}>
+                        <item.icon className="h-4 w-4" />
+                        <span>{item.label}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </>
+            )}
           </SidebarMenu>
         </SidebarContent>
       </Sidebar>

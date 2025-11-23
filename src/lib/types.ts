@@ -21,3 +21,15 @@ export interface Post {
   imageUrl?: string;
   imageHint?: string;
 }
+
+export type UserRole = 'admin' | 'user';
+export type UserType = 'revista' | 'marketplace' | 'ambos';
+
+export interface UserProfile {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  type: UserType;
+  createdAt: Date;
+}
