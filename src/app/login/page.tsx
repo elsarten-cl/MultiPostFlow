@@ -99,15 +99,23 @@ export default function LoginPage() {
     data: LoginFormValues
   ) => {
     setIsLoading(true);
+    let userCredential;
     try {
-      let userCredential;
       if (action === 'login') {
-        userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
+        userCredential = await signInWithEmailAndPassword(
+          auth,
+          data.email,
+          data.password
+        );
       } else {
-        userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
+        userCredential = await createUserWithEmailAndPassword(
+          auth,
+          data.email,
+          data.password
+        );
         await createUserDocument(firestore, userCredential.user, {});
       }
-      
+
       toast({
         title:
           action === 'login'
@@ -120,7 +128,9 @@ export default function LoginPage() {
       console.error(`${action} error:`, error);
       const errorMessage = getFirebaseAuthErrorMessage(error as AuthError);
       toast({
-        title: `Error de ${action === 'login' ? 'inicio de sesión' : 'registro'}`,
+        title: `Error de ${
+          action === 'login' ? 'inicio de sesión' : 'registro'
+        }`,
         description: errorMessage,
         variant: 'destructive',
       });
