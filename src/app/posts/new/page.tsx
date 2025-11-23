@@ -13,9 +13,9 @@ export default function NewPostPage() {
     <AppLayout>
       <div className="mx-auto grid max-w-4xl gap-6">
         <div className="grid gap-2">
-          <h1 className="text-3xl font-bold tracking-tight">Create New Post</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Crear Nueva Publicación</h1>
           <p className="text-muted-foreground">
-            Draft your content and let AI tailor it for each platform.
+            Escribe tu contenido y deja que la IA lo adapte para cada plataforma.
           </p>
         </div>
         <PostForm />

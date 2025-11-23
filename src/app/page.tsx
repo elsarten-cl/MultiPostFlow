@@ -11,15 +11,15 @@ export default function DashboardPage() {
       <div className="flex flex-col gap-8">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Panel</h1>
             <p className="text-muted-foreground">
-              Manage your social media posts here.
+              Gestiona tus publicaciones de redes sociales aquí.
             </p>
           </div>
           <Button asChild>
             <Link href="/posts/new">
               <PlusCircle />
-              New Post
+              Nueva Publicación
             </Link>
           </Button>
         </div>

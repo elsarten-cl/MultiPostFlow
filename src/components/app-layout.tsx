@@ -27,8 +27,8 @@ import { cn } from '@/lib/utils';
 import { Bot } from 'lucide-react';
 
 const navItems = [
-  { href: '/', icon: Icons.Dashboard, label: 'Dashboard' },
-  { href: '/posts/new', icon: Icons.NewPost, label: 'New Post' },
+  { href: '/', icon: Icons.Dashboard, label: 'Panel' },
+  { href: '/posts/new', icon: Icons.NewPost, label: 'Nueva Publicación' },
 ];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -87,7 +87,7 @@ function UserMenu() {
           className="relative h-9 w-9 rounded-full"
         >
           <Avatar className="h-9 w-9">
-            <AvatarImage src="https://picsum.photos/seed/user/40/40" alt="User" />
+            <AvatarImage src="https://picsum.photos/seed/user/40/40" alt="Usuario" />
             <AvatarFallback>U</AvatarFallback>
           </Avatar>
         </Button>
@@ -95,14 +95,14 @@ function UserMenu() {
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">User</p>
+            <p className="text-sm font-medium leading-none">Usuario</p>
             <p className="text-xs leading-none text-muted-foreground">
-              user@example.com
+              usuario@example.com
             </p>
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem>Log out</DropdownMenuItem>
+        <DropdownMenuItem>Cerrar Sesión</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

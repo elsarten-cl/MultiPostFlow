@@ -31,9 +31,9 @@ export default function PostList({ posts }: { posts: Post[] }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Recent Posts</CardTitle>
+        <CardTitle>Publicaciones Recientes</CardTitle>
         <CardDescription>
-          A list of your recent social media posts.
+          Una lista de tus publicaciones recientes en redes sociales.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -41,14 +41,14 @@ export default function PostList({ posts }: { posts: Post[] }) {
           <TableHeader>
             <TableRow>
               <TableHead className="hidden w-[100px] sm:table-cell">
-                <span className="sr-only">Image</span>
+                <span className="sr-only">Imagen</span>
               </TableHead>
-              <TableHead>Title</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Platforms</TableHead>
-              <TableHead className="hidden md:table-cell">Scheduled At</TableHead>
+              <TableHead>Título</TableHead>
+              <TableHead>Estado</TableHead>
+              <TableHead>Plataformas</TableHead>
+              <TableHead className="hidden md:table-cell">Programado Para</TableHead>
               <TableHead>
-                <span className="sr-only">Actions</span>
+                <span className="sr-only">Acciones</span>
               </TableHead>
             </TableRow>
           </TableHeader>
@@ -58,7 +58,7 @@ export default function PostList({ posts }: { posts: Post[] }) {
                 <TableCell className="hidden sm:table-cell">
                   {post.imageUrl ? (
                     <Image
-                      alt="Post image"
+                      alt="Imagen de la publicación"
                       className="aspect-square rounded-md object-cover"
                       height="64"
                       src={post.imageUrl}
@@ -85,27 +85,27 @@ export default function PostList({ posts }: { posts: Post[] }) {
                 </TableCell>
                 <TableCell className="hidden md:table-cell">
                   {post.scheduledAt
-                    ? post.scheduledAt.toLocaleDateString('en-US', {
+                    ? post.scheduledAt.toLocaleDateString('es-CL', {
                         year: 'numeric',
                         month: 'long',
                         day: 'numeric',
                       })
-                    : 'Not scheduled'}
+                    : 'No programado'}
                 </TableCell>
                 <TableCell>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button aria-haspopup="true" size="icon" variant="ghost">
                         <Ellipsis className="h-4 w-4" />
-                        <span className="sr-only">Toggle menu</span>
+                        <span className="sr-only">Alternar menú</span>
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                      <DropdownMenuItem>Edit</DropdownMenuItem>
-                      <DropdownMenuItem>Duplicate</DropdownMenuItem>
+                      <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                      <DropdownMenuItem>Editar</DropdownMenuItem>
+                      <DropdownMenuItem>Duplicar</DropdownMenuItem>
                       <DropdownMenuItem className="text-destructive">
-                        Delete
+                        Eliminar
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>

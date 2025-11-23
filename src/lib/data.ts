@@ -4,8 +4,8 @@ import { PlaceHolderImages } from './placeholder-images';
 export const mockPosts: Post[] = [
   {
     id: '1',
-    title: 'Q3 Marketing Campaign Launch',
-    content: 'Get ready for our biggest campaign of the year! We are launching...',
+    title: 'Lanzamiento Campaña Marketing Q3',
+    content: '¡Prepárate para nuestra campaña más grande del año! Estamos lanzando...',
     status: 'published',
     platforms: ['facebook', 'instagram'],
     scheduledAt: new Date('2023-10-01T10:00:00Z'),
@@ -15,8 +15,8 @@ export const mockPosts: Post[] = [
   },
   {
     id: '2',
-    title: 'New Blog Post: The Future of AI',
-    content: 'Our latest blog post explores the exciting advancements in AI and what they mean...',
+    title: 'Nuevo Post: El Futuro de la IA',
+    content: 'Nuestro último post explora los emocionantes avances en IA y lo que significan...',
     status: 'scheduled',
     platforms: ['wordpress'],
     scheduledAt: new Date(),
@@ -24,8 +24,8 @@ export const mockPosts: Post[] = [
   },
   {
     id: '3',
-    title: 'Team Retreat Highlights',
-    content: 'What an amazing team retreat! Here are some of the highlights...',
+    title: 'Destacados del Retiro de Equipo',
+    content: '¡Qué increíble retiro de equipo! Aquí están algunos de los mejores momentos...',
     status: 'draft',
     platforms: ['instagram'],
     scheduledAt: null,
@@ -35,17 +35,17 @@ export const mockPosts: Post[] = [
   },
   {
     id: '4',
-    title: 'Weekly Roundup',
-    content: 'This week was packed with updates. Here is a quick summary...',
+    title: 'Resumen Semanal',
+    content: 'Esta semana estuvo llena de actualizaciones. Aquí hay un resumen rápido...',
     status: 'sent-to-make',
     platforms: ['facebook', 'wordpress'],
-    scheduledAt: new Date(new Date().getTime() + 2 * 24 * 60 * 60 * 1000), // 2 days from now
+    scheduledAt: new Date(new Date().getTime() + 2 * 24 * 60 * 60 * 1000), // 2 días desde ahora
     createdAt: new Date('2023-10-04T16:00:00Z'),
   },
   {
     id: '5',
-    title: 'Product Hunt Launch Failure',
-    content: 'Our launch on Product Hunt did not go as planned. Here is what we learned...',
+    title: 'Fallo en Lanzamiento de Product Hunt',
+    content: 'Nuestro lanzamiento en Product Hunt no salió como lo planeamos. Esto es lo que aprendimos...',
     status: 'error',
     platforms: ['wordpress'],
     scheduledAt: new Date('2023-09-20T12:00:00Z'),
@@ -53,11 +53,11 @@ export const mockPosts: Post[] = [
   },
   {
     id: '6',
-    title: 'Behind the Scenes',
-    content: 'A sneak peek into how we create our products. It all starts with an idea...',
+    title: 'Detrás de Escena',
+    content: 'Un vistazo a cómo creamos nuestros productos. Todo comienza con una idea...',
     status: 'pending',
     platforms: ['instagram'],
-    scheduledAt: new Date(new Date().getTime() + 5 * 24 * 60 * 60 * 1000), // 5 days from now
+    scheduledAt: new Date(new Date().getTime() + 5 * 24 * 60 * 60 * 1000), // 5 días desde ahora
     createdAt: new Date('2023-10-05T13:45:00Z'),
     imageUrl: PlaceHolderImages[2]?.imageUrl,
     imageHint: PlaceHolderImages[2]?.imageHint,

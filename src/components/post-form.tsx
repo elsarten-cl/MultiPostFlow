@@ -45,13 +45,13 @@ import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 
 const postFormSchema = z.object({
   title: z.string().min(2, {
-    message: 'Title must be at least 2 characters.',
+    message: 'El título debe tener al menos 2 caracteres.',
   }),
   draft: z.string().min(10, {
-    message: 'Draft must be at least 10 characters.',
+    message: 'El borrador debe tener al menos 10 caracteres.',
   }),
   platforms: z.array(z.string()).refine((value) => value.some((item) => item), {
-    message: 'You have to select at least one platform.',
+    message: 'Tienes que seleccionar al menos una plataforma.',
   }),
   schedule: z.date().optional(),
 });
@@ -83,8 +83,8 @@ export function PostForm() {
     const draft = form.getValues('draft');
     if (!draft || selectedPlatforms.length === 0) {
       toast({
-        title: 'Missing Information',
-        description: 'Please write a draft and select at least one platform.',
+        title: 'Falta Información',
+        description: 'Por favor escribe un borrador y selecciona al menos una plataforma.',
         variant: 'destructive',
       });
       return;
@@ -106,11 +106,11 @@ export function PostForm() {
       });
       setGeneratedContent(newContent);
     } catch (error) {
-      console.error('Error generating content:', error);
+      console.error('Error generando contenido:', error);
       toast({
-        title: 'AI Generation Failed',
+        title: 'Falló la Generación con IA',
         description:
-          'There was an error generating content. Please try again.',
+          'Hubo un error generando el contenido. Por favor, inténtalo de nuevo.',
         variant: 'destructive',
       });
     } finally {
@@ -130,10 +130,10 @@ export function PostForm() {
       });
       setSuggestions((prev) => ({ ...prev, [platform]: result.suggestions }));
     } catch (error) {
-      console.error('Error getting suggestions:', error);
+      console.error('Error obteniendo sugerencias:', error);
       toast({
-        title: 'Failed to Get Suggestions',
-        description: 'There was an error getting suggestions. Please try again.',
+        title: 'Fallo al Obtener Sugerencias',
+        description: 'Hubo un error obteniendo sugerencias. Por favor, inténtalo de nuevo.',
         variant: 'destructive',
       });
     } finally {
@@ -144,7 +144,7 @@ export function PostForm() {
 
   function onSubmit(data: PostFormValues) {
     toast({
-      title: 'Post Submitted!',
+      title: '¡Publicación Enviada!',
       description: (
         <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4 font-code">
           <code className="text-white">{JSON.stringify(data, null, 2)}</code>
@@ -167,12 +167,12 @@ export function PostForm() {
                   name="title"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Post Title</FormLabel>
+                      <FormLabel>Título de la Publicación</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g. Q4 Product Launch" {...field} />
+                        <Input placeholder="p. ej. Lanzamiento Producto Q4" {...field} />
                       </FormControl>
                       <FormDescription>
-                        An internal title for your post.
+                        Un título interno para tu publicación.
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -183,7 +183,7 @@ export function PostForm() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Draft</CardTitle>
+                <CardTitle>Borrador</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <FormField
@@ -191,10 +191,10 @@ export function PostForm() {
                   name="draft"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Base Content</FormLabel>
+                      <FormLabel>Contenido Base</FormLabel>
                       <FormControl>
                         <Textarea
-                          placeholder="Write your core message here. AI will adapt it for each platform."
+                          placeholder="Escribe tu mensaje principal aquí. La IA lo adaptará para cada plataforma."
                           className="min-h-[150px]"
                           {...field}
                         />
@@ -209,9 +209,9 @@ export function PostForm() {
                   render={() => (
                     <FormItem>
                       <div className="mb-4">
-                        <FormLabel className="text-base">Platforms</FormLabel>
+                        <FormLabel className="text-base">Plataformas</FormLabel>
                         <FormDescription>
-                          Select where you want to post.
+                          Selecciona dónde quieres publicar.
                         </FormDescription>
                       </div>
                       <div className="space-y-2">
@@ -264,22 +264,22 @@ export function PostForm() {
                   ) : (
                     <Bot className="mr-2 h-4 w-4" />
                   )}
-                  Generate for Platforms
+                  Generar para Plataformas
                 </Button>
               </CardContent>
             </Card>
 
              <Card>
               <CardHeader>
-                <CardTitle>Media</CardTitle>
+                <CardTitle>Multimedia</CardTitle>
               </CardHeader>
               <CardContent>
                  <div className="flex items-center justify-center w-full">
                     <label htmlFor="dropzone-file" className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-lg cursor-pointer bg-card hover:bg-muted">
                         <div className="flex flex-col items-center justify-center pt-5 pb-6">
                             <UploadCloud className="w-8 h-8 mb-4 text-muted-foreground" />
-                            <p className="mb-2 text-sm text-muted-foreground"><span className="font-semibold">Click to upload</span> or drag and drop</p>
-                            <p className="text-xs text-muted-foreground">Image or Video (MAX. 800x400px)</p>
+                            <p className="mb-2 text-sm text-muted-foreground"><span className="font-semibold">Haz clic para subir</span> o arrastra y suelta</p>
+                            <p className="text-xs text-muted-foreground">Imagen o Video (MÁX. 800x400px)</p>
                         </div>
                         <Input id="dropzone-file" type="file" className="hidden" />
                     </label>
@@ -291,13 +291,13 @@ export function PostForm() {
           <div className="lg:col-span-2">
             <Card className="min-h-full">
               <CardHeader>
-                <CardTitle>Platform Previews</CardTitle>
+                <CardTitle>Vistas Previas de Plataforma</CardTitle>
               </CardHeader>
               <CardContent>
                 {selectedPlatforms.length === 0 ? (
                   <div className="text-center text-muted-foreground py-20">
                     <Bot className="mx-auto h-12 w-12" />
-                    <p className="mt-4">Select a platform and generate content to see previews here.</p>
+                    <p className="mt-4">Selecciona una plataforma y genera contenido para ver las vistas previas aquí.</p>
                   </div>
                 ) : (
                 <Tabs defaultValue={activeTab} className="w-full">
@@ -312,7 +312,7 @@ export function PostForm() {
                     <TabsContent key={platform} value={platform} className="mt-4 space-y-4">
                       <Textarea 
                         className="min-h-[250px] font-code text-sm" 
-                        value={isGenerating ? "Generating..." : (generatedContent[platform] || '')}
+                        value={isGenerating ? "Generando..." : (generatedContent[platform] || '')}
                         readOnly={isGenerating}
                         onChange={(e) => setGeneratedContent(p => ({...p, [platform]: e.target.value}))}
                       />
@@ -323,13 +323,13 @@ export function PostForm() {
                          ) : (
                            <Sparkles className="mr-2 h-4 w-4" />
                          )}
-                        Get Suggestions
+                        Obtener Sugerencias
                       </Button>
                       
                       {suggestions[platform] && (
                         <Alert>
                            <Sparkles className="h-4 w-4" />
-                          <AlertTitle>Improvement Suggestions</AlertTitle>
+                          <AlertTitle>Sugerencias de Mejora</AlertTitle>
                           <AlertDescription>
                             <ul className="list-disc pl-5 space-y-1 mt-2">
                               {suggestions[platform]?.map((s, i) => <li key={i}>{s}</li>)}
@@ -348,20 +348,20 @@ export function PostForm() {
 
         <div className="flex justify-end gap-2">
           <Button variant="outline" type="button">
-            Save Draft
+            Guardar Borrador
           </Button>
 
            <Popover>
             <PopoverTrigger asChild>
               <Button variant="critical">
                 <CalendarIcon className="mr-2 h-4 w-4" />
-                Publish / Schedule
+                Publicar / Programar
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="end">
               <div className="p-4 space-y-2">
-                 <p className="font-semibold">Schedule Post</p>
-                 <p className="text-sm text-muted-foreground">Select a date and time to publish this post.</p>
+                 <p className="font-semibold">Programar Publicación</p>
+                 <p className="text-sm text-muted-foreground">Selecciona una fecha y hora para publicar esta publicación.</p>
               </div>
               <Calendar
                 mode="single"
@@ -370,8 +370,8 @@ export function PostForm() {
                 initialFocus
               />
               <div className="p-4 border-t flex justify-end gap-2">
-                 <Button variant="outline" type="button">Publish Now</Button>
-                 <Button type="submit">Schedule</Button>
+                 <Button variant="outline" type="button">Publicar Ahora</Button>
+                 <Button type="submit">Programar</Button>
               </div>
             </PopoverContent>
           </Popover>
