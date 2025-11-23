@@ -24,12 +24,14 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/firebase';
+import { useAuth, useFirestore } from '@/firebase';
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   AuthError,
+  User,
 } from 'firebase/auth';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { Bot, Loader2 } from 'lucide-react';
 
 const loginFormSchema = z.object({
@@ -58,11 +60,31 @@ function getFirebaseAuthErrorMessage(error: AuthError): string {
   }
 }
 
+async function createUserDocument(
+  firestore: any,
+  user: User,
+  data: { name?: string }
+) {
+  const userRef = doc(firestore, 'users', user.uid);
+  const isAdmin = user.email === 'agencia@elsartenpro.com';
+
+  const userData = {
+    id: user.uid,
+    email: user.email,
+    name: data.name || user.displayName || user.email?.split('@')[0] || 'Usuario',
+    role: isAdmin ? 'admin' : 'user',
+    createdAt: serverTimestamp(),
+  };
+
+  await setDoc(userRef, userData, { merge: true });
+}
+
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
   const auth = useAuth();
+  const firestore = useFirestore();
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginFormSchema),
@@ -78,11 +100,14 @@ export default function LoginPage() {
   ) => {
     setIsLoading(true);
     try {
+      let userCredential;
       if (action === 'login') {
-        await signInWithEmailAndPassword(auth, data.email, data.password);
+        userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
       } else {
-        await createUserWithEmailAndPassword(auth, data.email, data.password);
+        userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
+        await createUserDocument(firestore, userCredential.user, {});
       }
+      
       toast({
         title:
           action === 'login'
