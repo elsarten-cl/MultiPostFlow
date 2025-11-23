@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "User": {
@@ -19,6 +20,11 @@
           "type": "string",
           "description": "Full name of the user."
         },
+        "role": {
+            "type": "string",
+            "description": "The role of the user.",
+            "enum": ["admin", "user"]
+        },
         "createdAt": {
           "type": "string",
           "description": "Timestamp indicating when the user account was created.",
@@ -29,6 +35,7 @@
         "id",
         "email",
         "name",
+        "role",
         "createdAt"
       ]
     },
@@ -171,8 +178,7 @@
   },
   "auth": {
     "providers": [
-      "password",
-      "anonymous"
+      "password"
     ]
   },
   "firestore": {
@@ -254,6 +260,6 @@
         }
       }
     ],
-    "reasoning": "The Firestore data structure is designed to support the MultiPostFlow application, emphasizing security, scalability, and debuggability by adhering to the principles of Authorization Independence, Clarity of Intent, DBAC (Database-Based Access Control), and QAPs (Rules are not Filters). Authorization Independence is achieved through denormalization, specifically by including the `userId` within the `/drafts/{draftId}` collection, which eliminates the need for `get()` calls in security rules when validating ownership. Structural Segregation is employed to separate user-specific data (drafts, post states, automation logs) into user-owned subcollections, ensuring consistent security postures within each collection. Access Modeling uses path-based ownership (`/users/{userId}/drafts/{draftId}`) to ensure secure and efficient access control for user-created drafts. This design supports QAPs by allowing secure listing of user-owned drafts based solely on the path and `request.auth.uid`, without needing to filter based on document content.\n\nEach entity has a unique ID, timestamp fields (`createdAt`, `updatedAt`, `lastUpdated`), and explicit state modeling using the `status` field in `PostState`. This enhances clarity and predictability. Denormalization of `userId` into child collections (Drafts, AutomationLogs, PostStates) enables atomic operations and eliminates hierarchical authorization dependencies."
+    "reasoning": "The Firestore data structure is designed to support the MultiPostFlow application, emphasizing security, scalability, and debuggability by adhering to the principles of Authorization Independence, Clarity of Intent, DBAC (Database-Based Access Control), and QAPs (Rules are not Filters). Authorization Independence is achieved through denormalization, specifically by including the `userId` within the `/drafts/{draftId}` collection, which eliminates the need for `get()` calls in security rules when validating ownership. Structural Segregation is employed to separate user-specific data (drafts, post states, automation logs) into user-owned subcollections, ensuring consistent security postures within each collection. Access Modeling uses path-based ownership (`/users/{userId}/drafts/{draftId}`) to ensure secure and efficient access control for user-created drafts. This design supports QAPs by allowing secure listing of user-owned drafts based solely on the path and `request.auth.uid`, without needing to filter based on document content.\n\nEach entity has a unique ID, timestamp fields (`createdAt`, `updatedAt`, `lastUpdated`), and explicit state modeling using the `status` field in `PostState`. Denormalization of `userId` into child collections (Drafts, AutomationLogs, PostStates) enables atomic operations and eliminates hierarchical authorization dependencies."
   }
 }

@@ -1,11 +1,18 @@
+'use client';
+
 import Link from 'next/link';
 import { PlusCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/components/app-layout';
 import PostList from '@/components/post-list';
-import { mockPosts } from '@/lib/data';
+import { useUser } from '@/firebase';
 
 export default function DashboardPage() {
+  const { user } = useUser();
+
+  // We'll fetch real posts later. For now, an empty array.
+  const posts = [];
+
   return (
     <AppLayout>
       <div className="flex flex-col gap-8">
@@ -23,7 +30,7 @@ export default function DashboardPage() {
             </Link>
           </Button>
         </div>
-        <PostList posts={mockPosts} />
+        <PostList posts={posts} />
       </div>
     </AppLayout>
   );

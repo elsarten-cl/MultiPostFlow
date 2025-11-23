@@ -1,6 +1,7 @@
 import type { Post } from './types';
 import { PlaceHolderImages } from './placeholder-images';
 
+// This data is now for demonstration purposes and can be removed later.
 export const mockPosts: Post[] = [
   {
     id: '1',

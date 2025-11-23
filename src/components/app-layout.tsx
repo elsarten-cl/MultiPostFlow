@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Button } from './ui/button';
 import {
@@ -24,7 +24,9 @@ import {
 } from './ui/sidebar';
 import { Icons } from './icons';
 import { cn } from '@/lib/utils';
-import { Bot } from 'lucide-react';
+import { Bot, Loader2 } from 'lucide-react';
+import { useUser, useAuth } from '@/firebase';
+import { signOut } from 'firebase/auth';
 
 const navItems = [
   { href: '/', icon: Icons.Dashboard, label: 'Panel' },
@@ -33,6 +35,21 @@ const navItems = [
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const { user, isUserLoading } = useUser();
+  const router = useRouter();
+
+  if (isUserLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    router.push('/login');
+    return null;
+  }
 
   return (
     <SidebarProvider>
@@ -79,6 +96,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 }
 
 function UserMenu() {
+  const { user } = useUser();
+  const auth = useAuth();
+  const router = useRouter();
+
+  const handleSignOut = async () => {
+    await signOut(auth);
+    router.push('/login');
+  };
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -87,22 +113,22 @@ function UserMenu() {
           className="relative h-9 w-9 rounded-full"
         >
           <Avatar className="h-9 w-9">
-            <AvatarImage src="https://picsum.photos/seed/user/40/40" alt="Usuario" />
-            <AvatarFallback>U</AvatarFallback>
+            <AvatarImage src={user?.photoURL || ''} alt={user?.displayName || 'Usuario'} />
+            <AvatarFallback>{user?.email?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">Usuario</p>
+            <p className="text-sm font-medium leading-none">{user?.displayName || 'Usuario'}</p>
             <p className="text-xs leading-none text-muted-foreground">
-              usuario@example.com
+              {user?.email}
             </p>
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem>Cerrar Sesión</DropdownMenuItem>
+        <DropdownMenuItem onClick={handleSignOut}>Cerrar Sesión</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

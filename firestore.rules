@@ -1,33 +1,4 @@
-/**
- * Core Philosophy: This ruleset enforces a strict user-ownership model. All user-generated
- * content, including drafts, post states, and automation logs, is stored in subcollections
- * under that user's specific document. This ensures that users can only access and manage
- * their own data, providing strong data privacy and isolation by default.
- *
- * Data Structure: The data is organized hierarchically, starting with a top-level '/users'
- * collection. Each user document, identified by their UID, serves as the root for their
- * private data trees, which include '/drafts', '/postStates', and '/automationLogs' subcollections.
- * This structure is fundamental to the security model, as ownership is determined by the document path.
- *
- * Key Security Decisions:
- * - User Enumeration Disabled: Listing documents in the top-level '/users' collection is explicitly
- *   disallowed to protect user privacy and prevent scraping of user information.
- * - Path-Based Security: Access to all subcollection documents is primarily controlled by matching
- *   the authenticated user's ID with the '{userId}' wildcard in the path. This is a highly
- *   performant and secure method.
- * - Default Deny: Any operation not explicitly granted is denied. There are no public write
- *   permissions.
- *
- * Denormalization for Authorization: The '/drafts' documents contain a denormalized 'userId' field.
- * This is used during document creation and updates to enforce relational integrity, ensuring that a
- * draft created under a user's path also contains their ID internally. This prevents data misattribution.
- * For other subcollections like 'postStates' and 'automationLogs', authorization relies solely on the
- * document path, which is secure and sufficient for this ownership model.
- *
- * Structural Segregation: The design inherently separates each user's private data from others by
- * nesting it within their own document tree (e.g., /users/{userId}/drafts/{draftId}). This pattern
- * simplifies security rules and makes it impossible for users to query or list data belonging to others.
- */
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -61,6 +32,21 @@ service cloud.firestore {
     }
 
     /**
+     * Validates the structure and integrity of a user document upon creation.
+     */
+    function isValidNewUser(userId) {
+        let data = request.resource.data;
+        let isAdminAttempt = data.role == 'admin';
+        let isFirstAdmin = data.email == 'agencia@elsartenpro.com';
+
+        return isOwner(userId) && 
+               data.id == userId &&
+               data.email == request.auth.token.email &&
+               (!isAdminAttempt || (isAdminAttempt && isFirstAdmin)) &&
+               (data.role == 'user' || (data.role == 'admin' && isFirstAdmin));
+    }
+
+    /**
      * @description Manages user profile documents. Only the user themselves can create,
      * read, update, or delete their own profile. Listing all users is forbidden.
      * @path /users/{userId}
@@ -71,8 +57,8 @@ service cloud.firestore {
     match /users/{userId} {
       allow get: if isOwner(userId);
       allow list: if false;
-      allow create: if isOwner(userId) && request.resource.data.id == userId;
-      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow create: if isValidNewUser(userId);
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id && request.resource.data.role == resource.data.role;
       allow delete: if isExistingOwner(userId);
 
       /**
