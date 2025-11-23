@@ -49,6 +49,7 @@ function getFirebaseAuthErrorMessage(error: AuthError): string {
       return 'Este usuario ha sido deshabilitado.';
     case 'auth/user-not-found':
     case 'auth/wrong-password':
+    case 'auth/invalid-credential':
       return 'Email o contraseña incorrectos.';
     case 'auth/email-already-in-use':
       return 'Este email ya está en uso. Intenta iniciar sesión.';
