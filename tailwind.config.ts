@@ -12,7 +12,7 @@ export default {
       fontFamily: {
         body: ['Inter', 'sans-serif'],
         headline: ['Inter', 'sans-serif'],
-        code: ['monospace'],
+        code: ['Source Code Pro', 'monospace'],
       },
       colors: {
         background: 'hsl(var(--background))',
@@ -44,6 +44,17 @@ export default {
         destructive: {
           DEFAULT: 'hsl(var(--destructive))',
           foreground: 'hsl(var(--destructive-foreground))',
+        },
+        critical: {
+          DEFAULT: 'hsl(var(--critical))',
+          foreground: 'hsl(var(--critical-foreground))',
+        },
+        status: {
+          pending: '#4D7ACB',
+          processing: '#A1C0F5',
+          'sent-to-make': '#F86B00',
+          published: '#29C76F',
+          error: '#DA2C38',
         },
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
