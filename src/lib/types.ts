@@ -3,7 +3,6 @@ export type Platform = 'facebook' | 'instagram' | 'wordpress';
 export const ALL_PLATFORMS: Platform[] = ['facebook', 'instagram', 'wordpress'];
 
 export type PostStatus =
-  | 'draft'
   | 'pending' // Pending approval or scheduling
   | 'processing'
   | 'sent-to-make'
@@ -51,5 +50,3 @@ export interface UserProfile {
   status: UserStatus;
   createdAt: any; // Can be Date or FieldValue
 }
-
-    

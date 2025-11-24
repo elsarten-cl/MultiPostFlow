@@ -167,22 +167,16 @@ export function PostForm() {
       setSelectedFile(event.target.files[0]);
     }
   };
-
-  async function handleSave(status: PostStatus, scheduleDate?: Date) {
+  
+  const onSubmit = async (data: PostFormValues) => {
+    const scheduleDate = form.getValues('schedule');
+    const status: PostStatus = scheduleDate ? 'scheduled' : 'sent-to-make';
+    
     if (!user) {
       toast({ title: 'No estás autenticado.', variant: 'destructive' });
-      return false;
+      return;
     }
 
-    // Trigger validation
-    const isValid = await form.trigger();
-    if (!isValid) {
-      toast({ title: 'Por favor, completa todos los campos requeridos.', variant: 'destructive' });
-      return false;
-    }
-
-    const data = form.getValues();
-    
     setIsSaving(true);
     try {
       let mediaUrl = '';
@@ -194,7 +188,7 @@ export function PostForm() {
         setIsUploading(false);
       }
       
-      const draftData = {
+      const postData = {
         userId: user.uid,
         title: data.title,
         content: data.draft,
@@ -207,11 +201,11 @@ export function PostForm() {
         platformContent: generatedContent,
       };
 
-      const docRef = await addDoc(collection(firestore, 'users', user.uid, 'drafts'), draftData);
+      await addDoc(collection(firestore, 'users', user.uid, 'drafts'), postData);
 
       toast({
-        title: status === 'draft' ? 'Borrador Guardado' : 'Publicación Enviada',
-        description: status === 'draft' ? 'Tu publicación ha sido guardada.' : 'Tu publicación ha sido enviada para ser procesada.',
+        title: 'Publicación Enviada',
+        description: 'Tu publicación ha sido enviada para ser procesada.',
       });
       
       // Reset form and state after successful save
@@ -220,7 +214,6 @@ export function PostForm() {
       setSuggestions({});
       setSelectedFile(null);
       router.push('/');
-      return true;
       
     } catch (error) {
       console.error('Error guardando:', error);
@@ -229,19 +222,12 @@ export function PostForm() {
         description: 'Hubo un problema al guardar tu publicación.',
         variant: 'destructive',
       });
-      return false;
     } finally {
       setIsSaving(false);
       setIsUploading(false);
     }
-  }
-  
-  const onSubmit = async (data: PostFormValues) => {
-    const scheduleDate = form.getValues('schedule');
-    const status: PostStatus = scheduleDate ? 'scheduled' : 'sent-to-make';
-    await handleSave(status, scheduleDate);
   };
-
+  
   const activeTab =
     selectedPlatforms.length > 0 ? selectedPlatforms[0] : undefined;
 
@@ -505,11 +491,6 @@ export function PostForm() {
         </div>
 
         <div className="flex justify-end gap-2">
-          <Button variant="outline" type="button" onClick={() => handleSave('draft')} disabled={isSaving || isUploading}>
-            {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-            Guardar Borrador
-          </Button>
-
           <Popover>
             <PopoverTrigger asChild>
               <Button variant="critical" disabled={isSaving || isUploading}>
@@ -553,5 +534,3 @@ export function PostForm() {
     </Form>
   );
 }
-
-    
