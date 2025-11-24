@@ -38,8 +38,8 @@ Platform: {{{platform}}}
 Adapt the content as follows:
 
 *   Facebook: Narrative, emotional, storytelling style.
-*   Instagram: Short, visual, direct style.
-*   WordPress: Long, editorialized, structured style.
+*   Instagram: Short, visual, direct style with relevant hashtags.
+*   WordPress (Revista nortedato.cl): Editorial style, informative and close to the local community. The tone should be objective and professional. It should be well-structured with clear paragraphs. If it is a product or service, highlight the benefits for the people of the city. Always include a clear call to action at the end.
 
 Return only the adapted content. Do not include any introductory or concluding remarks.
 `,
