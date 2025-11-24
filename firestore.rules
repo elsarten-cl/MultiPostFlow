@@ -22,11 +22,14 @@ service cloud.firestore {
     }
     
     function isAdmin() {
-      // Check for the specific admin email OR if the user's document has the 'admin' role.
+      // Allow the specific admin email to list all users.
+      // This is a special case for the admin user management page.
+      if (request.auth.token.email == 'agencia@elsartenpro.com') {
+        return true;
+      }
+      // For other operations, check the role in the user's document.
       // This get() is safe for rules on single documents, but not for list queries.
-      let isHardcodedAdmin = request.auth.token.email == 'agencia@elsartenpro.com';
-      let userHasAdminRole = isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
-      return isHardcodedAdmin || userHasAdminRole;
+      return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
     function isApprovedUser(userId) {
@@ -76,24 +79,29 @@ service cloud.firestore {
 
     match /users/{userId} {
       allow get: if isOwner(userId) || isAdmin();
-      // Only admins can list users. The rule is simplified to check the email directly
-      // to avoid a complex query that Firestore rules cannot handle for 'list'.
+      // Only the specific admin email can list users to avoid complex queries.
       allow list: if request.auth.token.email == 'agencia@elsartenpro.com';
       allow create: if isValidNewUser(userId);
       allow update: if isValidUserUpdate(userId);
       // Only admins can delete users, but not themselves.
       allow delete: if isAdmin() && request.auth.uid != userId;
 
+      // --- Estas son las reglas que faltaban en la captura ---
+
+      // Solo el propietario del perfil (`userId`) y que además esté 'approved' 
+      // puede leer y escribir en su propia subcolección de borradores.
       match /drafts/{draftId} {
-        allow read, write: if isSignedIn() && isApprovedUser(userId) && isOwner(userId);
+        allow read, write: if isOwner(userId) && isApprovedUser(userId);
       }
 
+      // Lo mismo para los estados de las publicaciones.
       match /postStates/{postStateId} {
-        allow read, write: if isSignedIn() && isApprovedUser(userId) && isOwner(userId);
+        allow read, write: if isOwner(userId) && isApprovedUser(userId);
       }
 
+      // Y también para los logs de automatización.
       match /automationLogs/{automationLogId} {
-        allow read, write: if isSignedIn() && isApprovedUser(userId) && isOwner(userId);
+        allow read, write: if isOwner(userId) && isApprovedUser(userId);
       }
     }
   }
