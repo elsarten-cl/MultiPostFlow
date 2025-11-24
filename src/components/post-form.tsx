@@ -102,19 +102,6 @@ export function PostForm() {
   
   const selectedCity = form.watch('city');
   
-  useEffect(() => {
-    // Automatically manage wordpress platform based on city selection
-    const currentPlatforms = form.getValues('platforms');
-    if (selectedCity) {
-      if (!currentPlatforms.includes('wordpress')) {
-        form.setValue('platforms', [...currentPlatforms, 'wordpress']);
-      }
-    } else {
-        form.setValue('platforms', currentPlatforms.filter(p => p !== 'wordpress'));
-    }
-  }, [selectedCity, form]);
-
-
   const selectedPlatforms = form.watch('platforms') as Platform[];
 
   async function handleGenerateContent() {
@@ -135,7 +122,7 @@ export function PostForm() {
     try {
       const platformsToGenerate = selectedPlatforms.filter(p => p !== 'marketplace') as ('facebook' | 'instagram' | 'wordpress')[];
       const promises = platformsToGenerate.map((platform) =>
-        generatePlatformSpecificContent({ draft, platform })
+        generatePlatformSpecificContent({ draft, platform: platform === 'wordpress' ? 'wordpress' : platform.toLowerCase() as 'facebook' | 'instagram' })
       );
       const results = await Promise.all(promises);
 
@@ -338,73 +325,97 @@ export function PostForm() {
                 <FormField
                   control={form.control}
                   name="platforms"
-                  render={() => (
+                  render={({ field }) => (
                     <FormItem>
                       <div className="mb-4">
                         <FormLabel className="text-base">Plataformas</FormLabel>
                       </div>
                       <TooltipProvider>
-                        <div className="flex items-center gap-x-4">
-                           <FormItem className="flex flex-row items-center space-x-2 space-y-0">
-                             <FormControl><Checkbox checked disabled /></FormControl>
+                        <div className="grid grid-cols-2 gap-4">
+                           <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                             <FormControl>
+                               <Checkbox 
+                                 checked={field.value?.includes('facebook')}
+                                 onCheckedChange={(checked) => {
+                                   const newPlatforms = checked
+                                     ? [...field.value, 'facebook']
+                                     : field.value?.filter(v => v !== 'facebook');
+                                   field.onChange(newPlatforms);
+                                 }}
+                               />
+                             </FormControl>
                              <FormLabel className="font-normal">
                                <Tooltip>
                                  <TooltipTrigger asChild>
-                                    <Image src="https://nortedato.cl/wp-content/uploads/2025/10/Facebook.png" alt="Facebook Logo" width={24} height={24} />
+                                    <Image src="https://nortedato.cl/wp-content/uploads/2025/10/Facebook.png" alt="Facebook Logo" width={28} height={28} />
                                  </TooltipTrigger>
                                  <TooltipContent>Facebook</TooltipContent>
                                </Tooltip>
                              </FormLabel>
                            </FormItem>
-                           <FormItem className="flex flex-row items-center space-x-2 space-y-0">
-                             <FormControl><Checkbox checked disabled /></FormControl>
+                           <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                              <FormControl>
+                               <Checkbox 
+                                 checked={field.value?.includes('instagram')}
+                                 onCheckedChange={(checked) => {
+                                   const newPlatforms = checked
+                                     ? [...field.value, 'instagram']
+                                     : field.value?.filter(v => v !== 'instagram');
+                                   field.onChange(newPlatforms);
+                                 }}
+                               />
+                             </FormControl>
                              <FormLabel className="font-normal">
                                <Tooltip>
                                  <TooltipTrigger asChild>
-                                   <Image src="https://nortedato.cl/wp-content/uploads/2025/10/Instagram.png" alt="Instagram Logo" width={24} height={24} />
+                                   <Image src="https://nortedato.cl/wp-content/uploads/2025/10/Instagram.png" alt="Instagram Logo" width={28} height={28} />
                                  </TooltipTrigger>
                                  <TooltipContent>Instagram</TooltipContent>
                                </Tooltip>
                              </FormLabel>
                            </FormItem>
-                           <FormItem className="flex flex-row items-center space-x-2 space-y-0">
-                             <FormControl><Checkbox checked={!!selectedCity} disabled /></FormControl>
-                             <FormLabel className={cn("font-normal", !selectedCity && "opacity-50")}>
+                           <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                              <FormControl>
+                               <Checkbox 
+                                 checked={field.value?.includes('wordpress')}
+                                 onCheckedChange={(checked) => {
+                                   const newPlatforms = checked
+                                     ? [...field.value, 'wordpress']
+                                     : field.value?.filter(v => v !== 'wordpress');
+                                   field.onChange(newPlatforms);
+                                 }}
+                               />
+                             </FormControl>
+                             <FormLabel className="font-normal">
                                <Tooltip>
                                  <TooltipTrigger asChild>
-                                   <Image src="https://nortedato.cl/wp-content/uploads/2025/10/Logo-Nortedatocl-General-trans.png" alt="Revista Logo" width={24} height={24} className="object-contain" />
+                                   <Image src="https://nortedato.cl/wp-content/uploads/2025/10/Logo-Nortedatocl-General-trans.png" alt="Revista Logo" width={32} height={32} className="object-contain" />
                                  </TooltipTrigger>
                                  <TooltipContent>Revista {selectedCity || ''}</TooltipContent>
                                </Tooltip>
                              </FormLabel>
                            </FormItem>
-                           <FormField
-                              control={form.control}
-                              name="platforms"
-                              render={({ field }) => (
-                                 <FormItem className="flex flex-row items-center space-x-2 space-y-0">
-                                  <FormControl>
-                                    <Checkbox
-                                      checked={field.value?.includes('marketplace')}
-                                      onCheckedChange={(checked) => {
-                                        const newPlatforms = checked
-                                          ? [...field.value, 'marketplace']
-                                          : field.value?.filter(v => v !== 'marketplace');
-                                        field.onChange(newPlatforms);
-                                      }}
-                                    />
-                                  </FormControl>
-                                  <FormLabel className="font-normal">
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                          <Image src="https://marketplace.nortedato.cl/wp-content/uploads/2025/11/cropped-logo-Marketplace-.png" alt="Marketplace Logo" width={24} height={24} className="object-contain" />
-                                      </TooltipTrigger>
-                                      <TooltipContent>Marketplace Nortedato.cl</TooltipContent>
-                                    </Tooltip>
-                                  </FormLabel>
-                                </FormItem>
-                              )}
-                            />
+                           <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                             <FormControl>
+                               <Checkbox
+                                 checked={field.value?.includes('marketplace')}
+                                 onCheckedChange={(checked) => {
+                                   const newPlatforms = checked
+                                     ? [...field.value, 'marketplace']
+                                     : field.value?.filter(v => v !== 'marketplace');
+                                   field.onChange(newPlatforms);
+                                 }}
+                               />
+                             </FormControl>
+                             <FormLabel className="font-normal">
+                               <Tooltip>
+                                 <TooltipTrigger asChild>
+                                     <Image src="https://marketplace.nortedato.cl/wp-content/uploads/2025/11/cropped-logo-Marketplace-.png" alt="Marketplace Logo" width={32} height={32} className="object-contain" />
+                                 </TooltipTrigger>
+                                 <TooltipContent>Marketplace Nortedato.cl</TooltipContent>
+                               </Tooltip>
+                             </FormLabel>
+                           </FormItem>
                         </div>
                       </TooltipProvider>
                       <FormMessage />
@@ -495,7 +506,7 @@ export function PostForm() {
                           value={platform}
                           disabled={!selectedPlatforms.includes(platform)}
                         >
-                          {platform === 'wordpress' ? `Revista ${selectedCity}` : platform.charAt(0).toUpperCase() + platform.slice(1)}
+                          {platform === 'wordpress' ? `Revista ${selectedCity || ''}` : platform.charAt(0).toUpperCase() + platform.slice(1)}
                         </TabsTrigger>
                       ))}
                         {selectedPlatforms.includes('marketplace' as any) && (
@@ -606,4 +617,5 @@ export function PostForm() {
       </form>
     </Form>
   );
-}
+
+    
