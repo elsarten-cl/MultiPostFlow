@@ -344,7 +344,7 @@ export function PostForm() {
                         <FormLabel className="text-base">Plataformas</FormLabel>
                       </div>
                       <TooltipProvider>
-                        <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
+                        <div className="flex items-center gap-x-4">
                            <FormItem className="flex flex-row items-center space-x-2 space-y-0">
                              <FormControl><Checkbox checked disabled /></FormControl>
                              <FormLabel className="font-normal">
