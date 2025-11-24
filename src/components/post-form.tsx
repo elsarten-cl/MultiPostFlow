@@ -65,11 +65,14 @@ const postFormSchema = z.object({
     message: 'Debes seleccionar al menos una plataforma.',
   }),
   schedule: z.date().optional(),
-  // New structured content fields
+  // New structured content fields based on user request
   nombreEmprendimiento: z.string().min(3, { message: "El nombre es requerido." }),
-  beneficios: z.string().min(10, { message: "Describe el producto y sus beneficios." }),
+  queOfreces: z.string().min(10, { message: "Cuéntanos qué haces y por qué es especial." }),
+  queProblemaResuelves: z.string().min(10, { message: "Explica qué problema resuelves." }),
   historia: z.string().min(10, { message: "La historia es importante." }),
-  cta: z.string().min(5, { message: "El llamado a la acción es requerido." }),
+  conexionTerritorio: z.string().min(10, { message: "La conexión con tu comunidad es clave." }),
+  queQuieresQueHagaLaGente: z.string().min(5, { message: "El llamado a la acción es requerido." }),
+  datosContacto: z.string().min(5, { message: "Los datos de contacto son requeridos." }),
 });
 
 type PostFormValues = z.infer<typeof postFormSchema>;
@@ -98,9 +101,12 @@ export function PostForm() {
       title: '',
       platforms: ['facebook', 'instagram'],
       nombreEmprendimiento: '',
-      beneficios: '',
+      queOfreces: '',
+      queProblemaResuelves: '',
       historia: '',
-      cta: '',
+      conexionTerritorio: '',
+      queQuieresQueHagaLaGente: '',
+      datosContacto: '',
     },
   });
   
@@ -111,17 +117,19 @@ export function PostForm() {
   async function handleGenerateContent() {
     const formValues = form.getValues();
     const draft = `
-      Nombre del Emprendimiento/Producto: ${formValues.nombreEmprendimiento}
-      Descripción y Beneficios: ${formValues.beneficios}
-      Historia y Conexión con el Territorio: ${formValues.historia}
-      Llamado a la Acción y Contacto: ${formValues.cta}
+      Nombre del emprendimiento o producto: ${formValues.nombreEmprendimiento}
+      ¿Qué ofreces y por qué es especial?: ${formValues.queOfreces}
+      ¿Qué problema ayudas a resolver o qué necesidad satisfaces?: ${formValues.queProblemaResuelves}
+      Historia del emprendimiento: ${formValues.historia}
+      Conexión con tu territorio o comunidad: ${formValues.conexionTerritorio}
+      ¿Qué te gustaría que haga la gente después de conocer tu emprendimiento?: ${formValues.queQuieresQueHagaLaGente}
+      Datos de contacto o redes sociales: ${formValues.datosContacto}
     `;
 
-    if (!draft || selectedPlatforms.length === 0) {
+    if (selectedPlatforms.length === 0) {
       toast({
         title: 'Falta Información',
-        description:
-          'Por favor completa los campos del formulario y selecciona al menos una plataforma.',
+        description: 'Por favor selecciona al menos una plataforma.',
         variant: 'destructive',
       });
       return;
@@ -144,7 +152,7 @@ export function PostForm() {
       });
       
       if(selectedPlatforms.includes('marketplace')) {
-          newContent['marketplace'] = formValues.beneficios;
+          newContent['marketplace'] = `${formValues.queOfreces}\n\n${formValues.queProblemaResuelves}`;
       }
       
       setGeneratedContent(newContent);
@@ -216,11 +224,14 @@ export function PostForm() {
       const postData = {
         userId: user.uid,
         title: data.title,
-        content: { // Store structured content
+        content: { // Store structured content from the new form
           nombreEmprendimiento: data.nombreEmprendimiento,
-          beneficios: data.beneficios,
+          queOfreces: data.queOfreces,
+          queProblemaResuelves: data.queProblemaResuelves,
           historia: data.historia,
-          cta: data.cta
+          conexionTerritorio: data.conexionTerritorio,
+          queQuieresQueHagaLaGente: data.queQuieresQueHagaLaGente,
+          datosContacto: data.datosContacto,
         },
         city: data.city,
         platforms: data.platforms,
@@ -317,8 +328,8 @@ export function PostForm() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Plantilla</CardTitle>
-                <CardDescription>Responde estas preguntas clave sobre tu producto o servicio.</CardDescription>
+                <CardTitle>Formulario NorteDato</CardTitle>
+                <CardDescription>Responde estas preguntas para que la IA cree tu contenido.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <FormField
@@ -326,9 +337,9 @@ export function PostForm() {
                   name="nombreEmprendimiento"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Nombre del Emprendimiento/Producto</FormLabel>
+                      <FormLabel>Nombre del emprendimiento o producto</FormLabel>
                       <FormControl>
-                        <Input placeholder="Ej: Café 'El Tostador del Desierto'" {...field} />
+                        <Input placeholder="Ej: Café El Tostador del Desierto, Dulcería Doña Rosa…" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -336,14 +347,31 @@ export function PostForm() {
                 />
                 <FormField
                   control={form.control}
-                  name="beneficios"
+                  name="queOfreces"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>¿Qué es y cuáles son sus beneficios clave?</FormLabel>
+                      <FormLabel>¿Qué ofreces y por qué es especial?</FormLabel>
                       <FormControl>
                         <Textarea
-                          placeholder="Describe el producto o servicio, y qué lo hace especial. ¿Qué problema resuelve o qué necesidad satisface?"
+                          placeholder="Cuéntanos en palabras simples qué haces y qué hace único a tu producto."
                           className="min-h-[120px]"
+                          {...field}
+                        />
+                      </FormControl>
+                       <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                 <FormField
+                  control={form.control}
+                  name="queProblemaResuelves"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>¿Qué problema ayudas a resolver o qué necesidad satisfaces?</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Ej: comida casera rápida, regalos personalizados, soluciones para empresas…"
+                          className="min-h-[100px]"
                           {...field}
                         />
                       </FormControl>
@@ -356,10 +384,10 @@ export function PostForm() {
                   name="historia"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Historia y conexión con el territorio</FormLabel>
+                      <FormLabel>Historia del emprendimiento</FormLabel>
                       <FormControl>
                         <Textarea
-                          placeholder="Cuéntanos el origen. ¿Hay alguna tradición familiar? ¿Cómo se conecta con la cultura, el paisaje o la gente del norte?"
+                          placeholder="¿Cómo comenzó todo? ¿Qué te inspiró a crear este negocio?"
                           className="min-h-[120px]"
                           {...field}
                         />
@@ -368,15 +396,49 @@ export function PostForm() {
                     </FormItem>
                   )}
                 />
-                 <FormField
+                <FormField
                   control={form.control}
-                  name="cta"
+                  name="conexionTerritorio"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Llamado a la acción y datos de contacto</FormLabel>
+                      <FormLabel>Conexión con tu territorio o comunidad</FormLabel>
                       <FormControl>
                         <Textarea
-                          placeholder="¿Qué quieres que haga el lector? (comprar, visitar, seguir, etc.). Incluye redes sociales, dirección o sitio web."
+                          placeholder="¿Cómo se relaciona tu emprendimiento con tu ciudad, barrio, familia o cultura?"
+                          className="min-h-[120px]"
+                          {...field}
+                        />
+                      </FormControl>
+                       <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="queQuieresQueHagaLaGente"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>¿Qué te gustaría que haga la gente después de conocer tu emprendimiento?</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Ej: comprar, reservar, seguir tus redes, visitar tu local…"
+                          className="min-h-[100px]"
+                          {...field}
+                        />
+                      </FormControl>
+                       <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="datosContacto"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Datos de contacto o redes sociales</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Instagram, WhatsApp, dirección, sitio web, etc."
                           className="min-h-[100px]"
                           {...field}
                         />
@@ -689,5 +751,6 @@ export function PostForm() {
   );
 
     
+
 
 

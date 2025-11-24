@@ -75,22 +75,42 @@
           "properties": {
             "nombreEmprendimiento": {
               "type": "string",
-              "description": "Name of the business or product."
+              "description": "Nombre del emprendimiento o producto"
             },
-            "beneficios": {
+            "queOfreces": {
               "type": "string",
-              "description": "Description of the product/service and its key benefits."
+              "description": "¿Qué ofreces y por qué es especial?"
+            },
+            "queProblemaResuelves": {
+              "type": "string",
+              "description": "¿Qué problema ayudas a resolver o qué necesidad satisfaces?"
             },
             "historia": {
               "type": "string",
-              "description": "History of the business and its connection to the local territory."
+              "description": "Historia del emprendimiento"
             },
-            "cta": {
+            "conexionTerritorio": {
               "type": "string",
-              "description": "Call to action and contact information."
+              "description": "Conexión con tu territorio o comunidad"
+            },
+            "queQuieresQueHagaLaGente": {
+              "type": "string",
+              "description": "¿Qué te gustaría que haga la gente después de conocer tu emprendimiento?"
+            },
+            "datosContacto": {
+              "type": "string",
+              "description": "Datos de contacto o redes sociales"
             }
           },
-          "required": ["nombreEmprendimiento", "beneficios", "historia", "cta"]
+          "required": [
+            "nombreEmprendimiento",
+            "queOfreces",
+            "queProblemaResuelves",
+            "historia",
+            "conexionTerritorio",
+            "queQuieresQueHagaLaGente",
+            "datosContacto"
+          ]
         },
         "platforms": {
           "type": "array",

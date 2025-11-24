@@ -9,11 +9,21 @@ export type PostStatus =
   | 'scheduled'
   | 'error';
 
+export interface DraftContent {
+  nombreEmprendimiento: string;
+  queOfreces: string;
+  queProblemaResuelves: string;
+  historia: string;
+  conexionTerritorio: string;
+  queQuieresQueHagaLaGente: string;
+  datosContacto: string;
+}
+
 export interface Draft {
   id: string;
   userId: string;
   title: string;
-  content: string; // The base draft content
+  content: DraftContent; // The base draft content as a structured object
   city: string;
   platformContent: Partial<Record<Platform, string>>; // AI-generated content
   status: PostStatus;
