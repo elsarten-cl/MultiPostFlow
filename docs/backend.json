@@ -70,8 +70,27 @@
           "description": "Title of the draft post."
         },
         "content": {
-          "type": "string",
-          "description": "Content of the draft post."
+          "type": "object",
+          "description": "Structured content from the post form.",
+          "properties": {
+            "nombreEmprendimiento": {
+              "type": "string",
+              "description": "Name of the business or product."
+            },
+            "beneficios": {
+              "type": "string",
+              "description": "Description of the product/service and its key benefits."
+            },
+            "historia": {
+              "type": "string",
+              "description": "History of the business and its connection to the local territory."
+            },
+            "cta": {
+              "type": "string",
+              "description": "Call to action and contact information."
+            }
+          },
+          "required": ["nombreEmprendimiento", "beneficios", "historia", "cta"]
         },
         "platforms": {
           "type": "array",

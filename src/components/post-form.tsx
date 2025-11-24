@@ -3,7 +3,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Image from 'next/image';
 import {
   Bot,
@@ -40,7 +40,6 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import type { Platform, PostStatus } from '@/lib/types';
 import { ALL_PLATFORMS } from '@/lib/types';
-import { Icons } from './icons';
 import {
   generatePlatformSpecificContent,
 } from '@/ai/flows/generate-platform-specific-content';
@@ -48,7 +47,7 @@ import {
   getContentImprovementSuggestions,
 } from '@/ai/flows/content-improvement-suggestions';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
-import { useAuth, useFirestore, useStorage, useUser } from '@/firebase';
+import { useUser, useFirestore, useStorage } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from './ui/tooltip';
@@ -59,9 +58,6 @@ const postFormSchema = z.object({
   title: z.string().min(2, {
     message: 'El título debe tener al menos 2 caracteres.',
   }),
-  description: z.string().min(10, {
-    message: 'La descripción debe tener al menos 10 caracteres.',
-  }),
   city: z.string({
     required_error: 'Debes seleccionar una ciudad.',
   }),
@@ -69,6 +65,11 @@ const postFormSchema = z.object({
     message: 'Debes seleccionar al menos una plataforma.',
   }),
   schedule: z.date().optional(),
+  // New structured content fields
+  nombreEmprendimiento: z.string().min(3, { message: "El nombre es requerido." }),
+  beneficios: z.string().min(10, { message: "Describe el producto y sus beneficios." }),
+  historia: z.string().min(10, { message: "La historia es importante." }),
+  cta: z.string().min(5, { message: "El llamado a la acción es requerido." }),
 });
 
 type PostFormValues = z.infer<typeof postFormSchema>;
@@ -95,8 +96,11 @@ export function PostForm() {
     resolver: zodResolver(postFormSchema),
     defaultValues: {
       title: '',
-      description: '',
       platforms: ['facebook', 'instagram'],
+      nombreEmprendimiento: '',
+      beneficios: '',
+      historia: '',
+      cta: '',
     },
   });
   
@@ -105,12 +109,19 @@ export function PostForm() {
   const selectedPlatforms = form.watch('platforms') as Platform[];
 
   async function handleGenerateContent() {
-    const draft = form.getValues('description');
+    const formValues = form.getValues();
+    const draft = `
+      Nombre del Emprendimiento/Producto: ${formValues.nombreEmprendimiento}
+      Descripción y Beneficios: ${formValues.beneficios}
+      Historia y Conexión con el Territorio: ${formValues.historia}
+      Llamado a la Acción y Contacto: ${formValues.cta}
+    `;
+
     if (!draft || selectedPlatforms.length === 0) {
       toast({
         title: 'Falta Información',
         description:
-          'Por favor escribe una descripción y selecciona al menos una plataforma.',
+          'Por favor completa los campos del formulario y selecciona al menos una plataforma.',
         variant: 'destructive',
       });
       return;
@@ -132,9 +143,8 @@ export function PostForm() {
         newContent[platform] = result.platformSpecificContent;
       });
       
-      // For marketplace, just use the description
-      if(selectedPlatforms.includes('marketplace' as any)) {
-          newContent['marketplace' as any] = form.getValues('description');
+      if(selectedPlatforms.includes('marketplace')) {
+          newContent['marketplace'] = formValues.beneficios;
       }
       
       setGeneratedContent(newContent);
@@ -206,7 +216,12 @@ export function PostForm() {
       const postData = {
         userId: user.uid,
         title: data.title,
-        content: data.description,
+        content: { // Store structured content
+          nombreEmprendimiento: data.nombreEmprendimiento,
+          beneficios: data.beneficios,
+          historia: data.historia,
+          cta: data.cta
+        },
         city: data.city,
         platforms: data.platforms,
         mediaUrls: mediaUrl ? [mediaUrl] : [],
@@ -303,20 +318,17 @@ export function PostForm() {
             <Card>
               <CardHeader>
                 <CardTitle>Plantilla</CardTitle>
+                <CardDescription>Responde estas preguntas clave sobre tu producto o servicio.</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-6">
                 <FormField
                   control={form.control}
-                  name="description"
+                  name="nombreEmprendimiento"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Descripción del Producto/Servicio</FormLabel>
+                      <FormLabel>Nombre del Emprendimiento/Producto</FormLabel>
                       <FormControl>
-                        <Textarea
-                          placeholder="Describe tu producto o servicio aquí..."
-                          className="min-h-[150px]"
-                          {...field}
-                        />
+                        <Input placeholder="Ej: Café 'El Tostador del Desierto'" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -324,14 +336,70 @@ export function PostForm() {
                 />
                 <FormField
                   control={form.control}
+                  name="beneficios"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>¿Qué es y cuáles son sus beneficios clave?</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Describe el producto o servicio, y qué lo hace especial. ¿Qué problema resuelve o qué necesidad satisface?"
+                          className="min-h-[120px]"
+                          {...field}
+                        />
+                      </FormControl>
+                       <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                 <FormField
+                  control={form.control}
+                  name="historia"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Historia y conexión con el territorio</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Cuéntanos el origen. ¿Hay alguna tradición familiar? ¿Cómo se conecta con la cultura, el paisaje o la gente del norte?"
+                          className="min-h-[120px]"
+                          {...field}
+                        />
+                      </FormControl>
+                       <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                 <FormField
+                  control={form.control}
+                  name="cta"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Llamado a la acción y datos de contacto</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="¿Qué quieres que haga el lector? (comprar, visitar, seguir, etc.). Incluye redes sociales, dirección o sitio web."
+                          className="min-h-[100px]"
+                          {...field}
+                        />
+                      </FormControl>
+                       <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </CardContent>
+            </Card>
+            
+            <Card>
+                <CardHeader>
+                    <CardTitle>Plataformas</CardTitle>
+                </CardHeader>
+                <CardContent>
+                <FormField
+                  control={form.control}
                   name="platforms"
                   render={({ field }) => (
                     <FormItem>
-                      <div className="mb-4">
-                        <FormLabel className="text-base">Plataformas</FormLabel>
-                      </div>
                       <TooltipProvider>
-                        <div className="grid grid-cols-2 gap-x-2 gap-y-4">
+                        <div className="grid grid-cols-2 gap-4">
                            <FormItem className="flex flex-row items-center space-x-3 space-y-0">
                              <FormControl>
                                <Checkbox 
@@ -374,7 +442,7 @@ export function PostForm() {
                                </Tooltip>
                              </FormLabel>
                            </FormItem>
-                           <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                           <FormItem className="flex flex-row items-center space-x-3 space-y-0">
                               <FormControl>
                                <Checkbox 
                                  checked={field.value?.includes('wordpress')}
@@ -396,7 +464,7 @@ export function PostForm() {
                                </Tooltip>
                              </FormLabel>
                            </FormItem>
-                           <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                           <FormItem className="flex flex-row items-center space-x-3 space-y-0">
                              <FormControl>
                                <Checkbox
                                  checked={field.value?.includes('marketplace')}
@@ -426,7 +494,7 @@ export function PostForm() {
                 />
                 <Button
                   type="button"
-                  className="w-full"
+                  className="w-full mt-6"
                   onClick={handleGenerateContent}
                   disabled={isGenerating || selectedPlatforms.length === 0}
                 >
@@ -511,9 +579,9 @@ export function PostForm() {
                           {platform === 'wordpress' ? `Revista ${selectedCity || ''}` : platform.charAt(0).toUpperCase() + platform.slice(1)}
                         </TabsTrigger>
                       ))}
-                        {selectedPlatforms.includes('marketplace' as any) && (
-                            <TabsTrigger value="marketplace">Marketplace</TabsTrigger>
-                        )}
+                      {selectedPlatforms.includes('marketplace') && (
+                          <TabsTrigger value="marketplace">Marketplace</TabsTrigger>
+                      )}
                     </TabsList>
                     {selectedPlatforms.map((platform) => (
                       <TabsContent
@@ -621,3 +689,4 @@ export function PostForm() {
   );
 
     
+
