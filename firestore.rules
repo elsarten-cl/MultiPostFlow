@@ -32,7 +32,7 @@ service cloud.firestore {
     }
     
     function isAdmin() {
-      return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      return isSignedIn() && (request.auth.token.email == 'agencia@elsartenpro.com' || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
     }
 
 
@@ -60,26 +60,26 @@ service cloud.firestore {
       allow delete: if isExistingOwner(userId);
 
       match /drafts/{draftId} {
-        allow get: if isOwner(userId);
-        allow list: if isOwner(userId);
+        allow get: if isOwner(userId) || isAdmin();
+        allow list: if isOwner(userId) || isAdmin();
         allow create: if isOwner(userId) && request.resource.data.userId == userId;
-        allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.id;
-        allow delete: if isExistingOwner(userId);
+        allow update: if (isOwner(userId) || isAdmin()) && request.resource.data.userId == resource.data.id;
+        allow delete: if isOwner(userId) || isAdmin();
       }
       match /postStates/{postStateId} {
-        allow get: if isOwner(userId);
-        allow list: if isOwner(userId);
-        allow create: if isOwner(userId);
-        allow update: if isExistingOwner(userId);
-        allow delete: if isExistingOwner(userId);
+        allow get: if isOwner(userId) || isAdmin();
+        allow list: if isOwner(userId) || isAdmin();
+        allow create: if isOwner(userId) || isAdmin();
+        allow update: if isOwner(userId) || isAdmin();
+        allow delete: if isOwner(userId) || isAdmin();
       }
 
       match /automationLogs/{automationLogId} {
-        allow get: if isOwner(userId);
-        allow list: if isOwner(userId);
-        allow create: if isOwner(userId);
-        allow update: if isExistingOwner(userId);
-        allow delete: if isExistingOwner(userId);
+        allow get: if isOwner(userId) || isAdmin();
+        allow list: if isOwner(userId) || isAdmin();
+        allow create: if isOwner(userId) || isAdmin();
+        allow update: if isOwner(userId) || isAdmin();
+        allow delete: if isOwner(userId) || isAdmin();
       }
     }
   }
