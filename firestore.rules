@@ -54,6 +54,7 @@ service cloud.firestore {
     
     match /users/{userId} {
       allow get: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin();
       allow create: if isValidNewUser(userId);
       allow update: if isExistingOwner(userId) || isAdmin();
       allow delete: if isExistingOwner(userId);
@@ -80,9 +81,6 @@ service cloud.firestore {
         allow update: if isExistingOwner(userId);
         allow delete: if isExistingOwner(userId);
       }
-    }
-    match /users/{document=**} {
-       allow list: if isAdmin();
     }
   }
 }
