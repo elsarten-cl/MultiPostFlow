@@ -13,20 +13,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
-import {
-  SidebarProvider,
-  Sidebar,
-  SidebarHeader,
-  SidebarContent,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
-  SidebarInset,
-} from './ui/sidebar';
 import { Icons } from './icons';
 import { cn } from '@/lib/utils';
 import { Bot, Loader2, Users, ShieldAlert, Clock } from 'lucide-react';
-import { useUser, useAuth, useFirestore, useDoc } from '@/firebase';
+import { useUser, useAuth, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import type { UserProfile } from '@/lib/types';
 import { doc } from 'firebase/firestore';
@@ -63,7 +53,6 @@ function RejectedScreen() {
     </div>
   );
 }
-
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -107,73 +96,41 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }
 
   const isAdmin = userProfile?.role === 'admin';
+  const allNavItems = isAdmin ? [...navItems, ...adminNavItems] : navItems;
+
 
   return (
-    <SidebarProvider>
-      <Sidebar>
-        <SidebarHeader>
-          <Link href="/" className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="bg-primary/10 text-primary hover:bg-primary/20">
-              <Bot className="h-5 w-5" />
-            </Button>
-            <span className="font-bold text-lg">MultiPostFlow</span>
+    <div className="flex min-h-screen w-full flex-col">
+      <header className="sticky top-0 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
+        <nav className="hidden flex-col gap-6 text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 md:text-sm lg:gap-6">
+          <Link
+            href="/"
+            className="flex items-center gap-2 text-lg font-semibold md:text-base"
+          >
+            <Bot className="h-6 w-6 text-primary" />
+            <span className="font-bold">MultiPostFlow</span>
           </Link>
-        </SidebarHeader>
-        <SidebarContent>
-          <SidebarMenu>
-            {navItems.map((item) => (
-              <SidebarMenuItem key={item.href}>
-                <SidebarMenuButton
-                  asChild
-                  isActive={pathname === item.href}
-                  className={cn(
-                    'justify-start',
-                    pathname === item.href &&
-                      'bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary'
-                  )}
-                >
-                  <Link href={item.href}>
-                    <item.icon className="h-4 w-4" />
-                    <span>{item.label}</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            ))}
-             {isAdmin && (
-              <>
-                <SidebarMenuItem>
-                  <div className="my-2 border-t border-sidebar-border" />
-                </SidebarMenuItem>
-                {adminNavItems.map((item) => (
-                  <SidebarMenuItem key={item.href}>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={pathname.startsWith(item.href)}
-                      className={cn(
-                        'justify-start',
-                        pathname.startsWith(item.href) &&
-                          'bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary'
-                      )}
-                    >
-                      <Link href={item.href}>
-                        <item.icon className="h-4 w-4" />
-                        <span>{item.label}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </>
-            )}
-          </SidebarMenu>
-        </SidebarContent>
-      </Sidebar>
-      <SidebarInset>
-        <header className="sticky top-0 z-10 flex h-16 items-center justify-end border-b bg-background/80 px-4 backdrop-blur-sm sm:px-8">
+          {allNavItems.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn(
+                "transition-colors hover:text-foreground",
+                pathname === item.href ? "text-foreground" : "text-muted-foreground"
+              )}
+            >
+              {item.label}
+            </Link>
+          ))}
+        </nav>
+        <div className="flex w-full items-center justify-end gap-4 md:ml-auto md:gap-2 lg:gap-4">
           <UserMenu />
-        </header>
-        <main className="p-4 sm:p-8">{children}</main>
-      </SidebarInset>
-    </SidebarProvider>
+        </div>
+      </header>
+      <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
+        {children}
+      </main>
+    </div>
   );
 }
 
@@ -214,12 +171,4 @@ function UserMenu() {
       </DropdownMenuContent>
     </DropdownMenu>
   );
-}
-
-function useMemoFirebase<T>(factory: () => T, deps: React.DependencyList): T {
-  const memoized = React.useMemo(factory, deps);
-  if (typeof memoized === 'object' && memoized !== null) {
-    (memoized as any).__memo = true;
-  }
-  return memoized;
 }
