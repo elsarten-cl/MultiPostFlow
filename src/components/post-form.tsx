@@ -381,7 +381,7 @@ export function PostForm() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Formulario NorteDato</CardTitle>
+                <CardTitle className="font-black">Formulario NorteDato</CardTitle>
                 <CardDescription>Responde estas preguntas para que la IA cree tu contenido.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -505,7 +505,7 @@ export function PostForm() {
             
             <Card>
                 <CardHeader>
-                    <CardTitle>Plataformas</CardTitle>
+                    <CardTitle className="font-black">Plataformas</CardTitle>
                 </CardHeader>
                 <CardContent>
                 <FormField
@@ -514,7 +514,7 @@ export function PostForm() {
                   render={({ field }) => (
                     <FormItem>
                       <TooltipProvider>
-                        <div className="grid grid-cols-2 gap-x-4 gap-y-6">
+                        <div className="flex flex-col gap-6">
                            <FormItem className="flex flex-row items-center space-x-3 space-y-0">
                              <FormControl>
                                <Checkbox 
@@ -569,8 +569,8 @@ export function PostForm() {
                                  }}
                                />
                              </FormControl>
-                             <FormLabel className="font-normal flex flex-col items-center gap-1 cursor-pointer">
-                               <span>Revista</span>
+                             <FormLabel className="font-normal flex items-center gap-2 cursor-pointer">
+                               <span className="font-medium">Revista</span>
                                <Tooltip>
                                  <TooltipTrigger asChild>
                                    <Image src="https://nortedato.cl/wp-content/uploads/2025/10/Logo-Nortedatocl-General-trans.png" alt="Revista Logo" width={40} height={40} className="object-contain" />
@@ -591,8 +591,8 @@ export function PostForm() {
                                  }}
                                />
                              </FormControl>
-                             <FormLabel className="font-normal flex flex-col items-center gap-1 cursor-pointer">
-                               <span>Marketplace</span>
+                             <FormLabel className="font-normal flex items-center gap-2 cursor-pointer">
+                               <span className="font-medium">Marketplace</span>
                                <Tooltip>
                                  <TooltipTrigger asChild>
                                      <Image src="https://marketplace.nortedato.cl/wp-content/uploads/2025/11/cropped-logo-Marketplace-.png" alt="Marketplace Logo" width={40} height={40} className="object-contain" />
@@ -625,7 +625,7 @@ export function PostForm() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Multimedia</CardTitle>
+                <CardTitle className="font-black">Multimedia</CardTitle>
                 <CardDescription>Sube una imagen o video para tu publicación.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -734,7 +734,7 @@ export function PostForm() {
           <div className="lg:col-span-2">
             <Card className="min-h-full">
               <CardHeader>
-                <CardTitle>Vistas Previas de Plataforma</CardTitle>
+                <CardTitle className="font-black">Vistas Previas de Plataforma</CardTitle>
               </CardHeader>
               <CardContent>
                 {selectedPlatforms.length === 0 ? (
@@ -862,5 +862,3 @@ export function PostForm() {
     </Form>
   );
 }
-
-    
