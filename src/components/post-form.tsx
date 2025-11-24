@@ -12,6 +12,13 @@ import {
   UploadCloud,
 } from 'lucide-react';
 import { format } from 'date-fns';
+import {
+  collection,
+  addDoc,
+  serverTimestamp,
+  updateDoc,
+} from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -30,7 +37,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import type { Platform } from '@/lib/types';
 import { ALL_PLATFORMS } from '@/lib/types';
@@ -42,6 +49,7 @@ import {
   getContentImprovementSuggestions,
 } from '@/ai/flows/content-improvement-suggestions';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
+import { useAuth, useFirestore, useStorage, useUser } from '@/firebase';
 
 const postFormSchema = z.object({
   title: z.string().min(2, {
@@ -63,10 +71,16 @@ type Suggestions = Partial<Record<Platform, string[]>>;
 
 export function PostForm() {
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [isSuggesting, setIsSuggesting] = useState<Platform | null>(null);
   const [generatedContent, setGeneratedContent] = useState<GeneratedContent>({});
   const [suggestions, setSuggestions] = useState<Suggestions>({});
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const { toast } = useToast();
+  const { user } = useUser();
+  const firestore = useFirestore();
+  const storage = useStorage();
 
   const form = useForm<PostFormValues>({
     resolver: zodResolver(postFormSchema),
@@ -84,7 +98,8 @@ export function PostForm() {
     if (!draft || selectedPlatforms.length === 0) {
       toast({
         title: 'Falta Información',
-        description: 'Por favor escribe un borrador y selecciona al menos una plataforma.',
+        description:
+          'Por favor escribe un borrador y selecciona al menos una plataforma.',
         variant: 'destructive',
       });
       return;
@@ -125,7 +140,9 @@ export function PostForm() {
     setIsSuggesting(platform);
     try {
       const result = await getContentImprovementSuggestions({
-        platform: platform.charAt(0).toUpperCase() + platform.slice(1) as 'Facebook' | 'Instagram' | 'WordPress',
+        platform:
+          (platform.charAt(0).toUpperCase() +
+            platform.slice(1)) as 'Facebook' | 'Instagram' | 'WordPress',
         content,
       });
       setSuggestions((prev) => ({ ...prev, [platform]: result.suggestions }));
@@ -133,7 +150,8 @@ export function PostForm() {
       console.error('Error obteniendo sugerencias:', error);
       toast({
         title: 'Fallo al Obtener Sugerencias',
-        description: 'Hubo un error obteniendo sugerencias. Por favor, inténtalo de nuevo.',
+        description:
+          'Hubo un error obteniendo sugerencias. Por favor, inténtalo de nuevo.',
         variant: 'destructive',
       });
     } finally {
@@ -141,19 +159,76 @@ export function PostForm() {
     }
   }
 
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files && event.target.files[0]) {
+      setSelectedFile(event.target.files[0]);
+    }
+  };
 
-  function onSubmit(data: PostFormValues) {
-    toast({
-      title: '¡Publicación Enviada!',
-      description: (
-        <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4 font-code">
-          <code className="text-white">{JSON.stringify(data, null, 2)}</code>
-        </pre>
-      ),
-    });
+  async function handleSaveDraft() {
+    if (!user) {
+      toast({ title: 'No estás autenticado.', variant: 'destructive' });
+      return;
+    }
+
+    const data = form.getValues();
+    
+    setIsSaving(true);
+    try {
+      let imageUrl = '';
+      if (selectedFile) {
+        setIsUploading(true);
+        const storageRef = ref(storage, `users/${user.uid}/${selectedFile.name}`);
+        const uploadTask = await uploadBytes(storageRef, selectedFile);
+        imageUrl = await getDownloadURL(uploadTask.ref);
+        setIsUploading(false);
+      }
+      
+      const draftData = {
+        userId: user.uid,
+        title: data.title,
+        content: data.draft,
+        platforms: data.platforms,
+        mediaUrls: imageUrl ? [imageUrl] : [],
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        status: 'draft', // Initial status
+        platformContent: generatedContent, // Save AI generated content too
+      };
+
+      const docRef = await addDoc(collection(firestore, 'users', user.uid, 'drafts'), draftData);
+
+      toast({
+        title: 'Borrador Guardado',
+        description: 'Tu publicación ha sido guardada como borrador.',
+      });
+      
+      // Optionally reset form
+      // form.reset();
+      // setSelectedFile(null);
+      // setGeneratedContent({});
+      
+    } catch (error) {
+      console.error('Error guardando el borrador:', error);
+      toast({
+        title: 'Error al Guardar',
+        description: 'Hubo un problema al guardar el borrador.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSaving(false);
+    }
   }
 
-  const activeTab = selectedPlatforms.length > 0 ? selectedPlatforms[0] : undefined;
+
+  function onSubmit(data: PostFormValues) {
+    // This will eventually trigger the Make.com workflow
+    console.log("Submitting for publishing:", data);
+    handleSaveDraft(); // For now, it just saves a draft
+  }
+
+  const activeTab =
+    selectedPlatforms.length > 0 ? selectedPlatforms[0] : undefined;
 
   return (
     <Form {...form}>
@@ -169,7 +244,10 @@ export function PostForm() {
                     <FormItem>
                       <FormLabel>Título de la Publicación</FormLabel>
                       <FormControl>
-                        <Input placeholder="p. ej. Lanzamiento Producto Q4" {...field} />
+                        <Input
+                          placeholder="p. ej. Lanzamiento Producto Q4"
+                          {...field}
+                        />
                       </FormControl>
                       <FormDescription>
                         Un título interno para tu publicación.
@@ -221,7 +299,11 @@ export function PostForm() {
                             control={form.control}
                             name="platforms"
                             render={({ field }) => {
-                              const Icon = Icons[item.charAt(0).toUpperCase() + item.slice(1) as keyof typeof Icons];
+                              const Icon =
+                                Icons[
+                                  (item.charAt(0).toUpperCase() +
+                                    item.slice(1)) as keyof typeof Icons
+                                ];
                               return (
                                 <FormItem
                                   key={item}
@@ -246,7 +328,8 @@ export function PostForm() {
                                   </FormControl>
                                   <FormLabel className="font-normal flex items-center gap-2">
                                     <Icon className="h-4 w-4" />
-                                    {item.charAt(0).toUpperCase() + item.slice(1)}
+                                    {item.charAt(0).toUpperCase() +
+                                      item.slice(1)}
                                   </FormLabel>
                                 </FormItem>
                               );
@@ -258,7 +341,12 @@ export function PostForm() {
                     </FormItem>
                   )}
                 />
-                <Button type="button" className="w-full" onClick={handleGenerateContent} disabled={isGenerating}>
+                <Button
+                  type="button"
+                  className="w-full"
+                  onClick={handleGenerateContent}
+                  disabled={isGenerating}
+                >
                   {isGenerating ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   ) : (
@@ -269,21 +357,47 @@ export function PostForm() {
               </CardContent>
             </Card>
 
-             <Card>
+            <Card>
               <CardHeader>
                 <CardTitle>Multimedia</CardTitle>
               </CardHeader>
               <CardContent>
-                 <div className="flex items-center justify-center w-full">
-                    <label htmlFor="dropzone-file" className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-lg cursor-pointer bg-card hover:bg-muted">
-                        <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                            <UploadCloud className="w-8 h-8 mb-4 text-muted-foreground" />
-                            <p className="mb-2 text-sm text-muted-foreground"><span className="font-semibold">Haz clic para subir</span> o arrastra y suelta</p>
-                            <p className="text-xs text-muted-foreground">Imagen o Video (MÁX. 800x400px)</p>
-                        </div>
-                        <Input id="dropzone-file" type="file" className="hidden" />
-                    </label>
-                </div> 
+                <div className="flex items-center justify-center w-full">
+                  <label
+                    htmlFor="dropzone-file"
+                    className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-lg cursor-pointer bg-card hover:bg-muted"
+                  >
+                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                      {isUploading ? (
+                         <Loader2 className="w-8 h-8 mb-4 text-muted-foreground animate-spin" />
+                      ) : (
+                         <UploadCloud className="w-8 h-8 mb-4 text-muted-foreground" />
+                      )}
+                      {selectedFile ? (
+                        <p className="mb-2 text-sm text-primary">{selectedFile.name}</p>
+                      ) : (
+                        <>
+                          <p className="mb-2 text-sm text-muted-foreground">
+                            <span className="font-semibold">
+                              Haz clic para subir
+                            </span>{' '}
+                            o arrastra y suelta
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Imagen o Video
+                          </p>
+                        </>
+                      )}
+                    </div>
+                    <Input
+                      id="dropzone-file"
+                      type="file"
+                      className="hidden"
+                      onChange={handleFileChange}
+                      disabled={isUploading}
+                    />
+                  </label>
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -297,49 +411,78 @@ export function PostForm() {
                 {selectedPlatforms.length === 0 ? (
                   <div className="text-center text-muted-foreground py-20">
                     <Bot className="mx-auto h-12 w-12" />
-                    <p className="mt-4">Selecciona una plataforma y genera contenido para ver las vistas previas aquí.</p>
+                    <p className="mt-4">
+                      Selecciona una plataforma y genera contenido para ver las
+                      vistas previas aquí.
+                    </p>
                   </div>
                 ) : (
-                <Tabs defaultValue={activeTab} className="w-full">
-                  <TabsList className="grid w-full grid-cols-3">
-                     {ALL_PLATFORMS.map((platform) => (
-                      <TabsTrigger key={platform} value={platform} disabled={!selectedPlatforms.includes(platform)}>
-                        {platform.charAt(0).toUpperCase() + platform.slice(1)}
-                      </TabsTrigger>
-                     ))}
-                  </TabsList>
-                  {selectedPlatforms.map(platform => (
-                    <TabsContent key={platform} value={platform} className="mt-4 space-y-4">
-                      <Textarea 
-                        className="min-h-[250px] font-code text-sm" 
-                        value={isGenerating ? "Generando..." : (generatedContent[platform] || '')}
-                        readOnly={isGenerating}
-                        onChange={(e) => setGeneratedContent(p => ({...p, [platform]: e.target.value}))}
-                      />
+                  <Tabs defaultValue={activeTab} className="w-full">
+                    <TabsList className="grid w-full grid-cols-3">
+                      {ALL_PLATFORMS.map((platform) => (
+                        <TabsTrigger
+                          key={platform}
+                          value={platform}
+                          disabled={!selectedPlatforms.includes(platform)}
+                        >
+                          {platform.charAt(0).toUpperCase() +
+                            platform.slice(1)}
+                        </TabsTrigger>
+                      ))}
+                    </TabsList>
+                    {selectedPlatforms.map((platform) => (
+                      <TabsContent
+                        key={platform}
+                        value={platform}
+                        className="mt-4 space-y-4"
+                      >
+                        <Textarea
+                          className="min-h-[250px] font-code text-sm"
+                          value={
+                            isGenerating
+                              ? 'Generando...'
+                              : generatedContent[platform] || ''
+                          }
+                          readOnly={isGenerating}
+                          onChange={(e) =>
+                            setGeneratedContent((p) => ({
+                              ...p,
+                              [platform]: e.target.value,
+                            }))
+                          }
+                        />
 
-                      <Button type="button" variant="outline" size="sm" onClick={() => handleGetSuggestions(platform)} disabled={isSuggesting === platform}>
-                         {isSuggesting === platform ? (
-                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                         ) : (
-                           <Sparkles className="mr-2 h-4 w-4" />
-                         )}
-                        Obtener Sugerencias
-                      </Button>
-                      
-                      {suggestions[platform] && (
-                        <Alert>
-                           <Sparkles className="h-4 w-4" />
-                          <AlertTitle>Sugerencias de Mejora</AlertTitle>
-                          <AlertDescription>
-                            <ul className="list-disc pl-5 space-y-1 mt-2">
-                              {suggestions[platform]?.map((s, i) => <li key={i}>{s}</li>)}
-                            </ul>
-                          </AlertDescription>
-                        </Alert>
-                      )}
-                    </TabsContent>
-                  ))}
-                </Tabs>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleGetSuggestions(platform)}
+                          disabled={isSuggesting === platform}
+                        >
+                          {isSuggesting === platform ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          ) : (
+                            <Sparkles className="mr-2 h-4 w-4" />
+                          )}
+                          Obtener Sugerencias
+                        </Button>
+
+                        {suggestions[platform] && (
+                          <Alert>
+                            <Sparkles className="h-4 w-4" />
+                            <AlertTitle>Sugerencias de Mejora</AlertTitle>
+                            <AlertDescription>
+                              <ul className="list-disc pl-5 space-y-1 mt-2">
+                                {suggestions[platform]?.map((s, i) => (
+                                  <li key={i}>{s}</li>
+                                ))}
+                              </ul>
+                            </AlertDescription>
+                          </Alert>
+                        )}
+                      </TabsContent>
+                    ))}
+                  </Tabs>
                 )}
               </CardContent>
             </Card>
@@ -347,11 +490,12 @@ export function PostForm() {
         </div>
 
         <div className="flex justify-end gap-2">
-          <Button variant="outline" type="button">
+          <Button variant="outline" type="button" onClick={handleSaveDraft} disabled={isSaving || isUploading}>
+            {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
             Guardar Borrador
           </Button>
 
-           <Popover>
+          <Popover>
             <PopoverTrigger asChild>
               <Button variant="critical">
                 <CalendarIcon className="mr-2 h-4 w-4" />
@@ -360,8 +504,10 @@ export function PostForm() {
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="end">
               <div className="p-4 space-y-2">
-                 <p className="font-semibold">Programar Publicación</p>
-                 <p className="text-sm text-muted-foreground">Selecciona una fecha y hora para publicar esta publicación.</p>
+                <p className="font-semibold">Programar Publicación</p>
+                <p className="text-sm text-muted-foreground">
+                  Selecciona una fecha y hora para publicar esta publicación.
+                </p>
               </div>
               <Calendar
                 mode="single"
@@ -370,8 +516,10 @@ export function PostForm() {
                 initialFocus
               />
               <div className="p-4 border-t flex justify-end gap-2">
-                 <Button variant="outline" type="button">Publicar Ahora</Button>
-                 <Button type="submit">Programar</Button>
+                <Button variant="outline" type="submit">
+                  Publicar Ahora
+                </Button>
+                <Button type="submit">Programar</Button>
               </div>
             </PopoverContent>
           </Popover>

@@ -4,11 +4,27 @@ export const ALL_PLATFORMS: Platform[] = ['facebook', 'instagram', 'wordpress'];
 
 export type PostStatus =
   | 'draft'
-  | 'pending'
+  | 'pending' // Pending approval or scheduling
   | 'processing'
   | 'sent-to-make'
   | 'published'
+  | 'scheduled'
   | 'error';
+
+export interface Draft {
+  id: string;
+  userId: string;
+  title: string;
+  content: string; // The base draft content
+  platformContent: Partial<Record<Platform, string>>; // AI-generated content
+  status: PostStatus;
+  platforms: Platform[];
+  mediaUrls: string[];
+  scheduledAt: Date | null;
+  createdAt: any; // Firestore Timestamp
+  updatedAt: any; // Firestore Timestamp
+}
+
 
 export interface Post {
   id: string;
