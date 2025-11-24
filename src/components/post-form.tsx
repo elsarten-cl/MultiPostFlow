@@ -331,7 +331,7 @@ export function PostForm() {
                         <FormLabel className="text-base">Plataformas</FormLabel>
                       </div>
                       <TooltipProvider>
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-2 gap-x-2 gap-y-4">
                            <FormItem className="flex flex-row items-center space-x-3 space-y-0">
                              <FormControl>
                                <Checkbox 
@@ -386,13 +386,14 @@ export function PostForm() {
                                  }}
                                />
                              </FormControl>
-                             <FormLabel className="font-normal">
+                             <FormLabel className="font-normal flex items-center gap-2">
                                <Tooltip>
                                  <TooltipTrigger asChild>
                                    <Image src="https://nortedato.cl/wp-content/uploads/2025/10/Logo-Nortedatocl-General-trans.png" alt="Revista Logo" width={32} height={32} className="object-contain" />
                                  </TooltipTrigger>
                                  <TooltipContent>Revista {selectedCity || ''}</TooltipContent>
                                </Tooltip>
+                               <span>Revista</span>
                              </FormLabel>
                            </FormItem>
                            <FormItem className="flex flex-row items-center space-x-3 space-y-0">
@@ -407,13 +408,14 @@ export function PostForm() {
                                  }}
                                />
                              </FormControl>
-                             <FormLabel className="font-normal">
+                             <FormLabel className="font-normal flex items-center gap-2">
                                <Tooltip>
                                  <TooltipTrigger asChild>
                                      <Image src="https://marketplace.nortedato.cl/wp-content/uploads/2025/11/cropped-logo-Marketplace-.png" alt="Marketplace Logo" width={32} height={32} className="object-contain" />
                                  </TooltipTrigger>
                                  <TooltipContent>Marketplace Nortedato.cl</TooltipContent>
                                </Tooltip>
+                               <span>Marketplace</span>
                              </FormLabel>
                            </FormItem>
                         </div>
