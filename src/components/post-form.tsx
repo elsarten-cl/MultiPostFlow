@@ -50,6 +50,7 @@ import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { useAuth, useFirestore, useStorage, useUser } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 
 const CITIES = ['Arica', 'Iquique', 'Antofagasta', 'Calama', 'Tacna'];
 
@@ -344,17 +345,35 @@ export function PostForm() {
                       <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
                          <FormItem className="flex flex-row items-center space-x-2 space-y-0">
                            <FormControl><Checkbox checked disabled /></FormControl>
-                           <FormLabel className="font-normal flex items-center gap-2 text-muted-foreground"><Icons.Facebook className="h-4 w-4" /> Facebook</FormLabel>
+                           <FormLabel className="font-normal">
+                             <Tooltip>
+                               <TooltipTrigger asChild>
+                                 <Icons.Facebook className="h-5 w-5 text-muted-foreground" />
+                               </TooltipTrigger>
+                               <TooltipContent>Facebook</TooltipContent>
+                             </Tooltip>
+                           </FormLabel>
                          </FormItem>
                          <FormItem className="flex flex-row items-center space-x-2 space-y-0">
                            <FormControl><Checkbox checked disabled /></FormControl>
-                           <FormLabel className="font-normal flex items-center gap-2 text-muted-foreground"><Icons.Instagram className="h-4 w-4" /> Instagram</FormLabel>
+                           <FormLabel className="font-normal">
+                             <Tooltip>
+                               <TooltipTrigger asChild>
+                                 <Icons.Instagram className="h-5 w-5 text-muted-foreground" />
+                               </TooltipTrigger>
+                               <TooltipContent>Instagram</TooltipContent>
+                             </Tooltip>
+                           </FormLabel>
                          </FormItem>
                          <FormItem className="flex flex-row items-center space-x-2 space-y-0">
                            <FormControl><Checkbox checked={!!selectedCity} disabled /></FormControl>
-                           <FormLabel className={cn("font-normal flex items-center gap-2", !selectedCity && "text-muted-foreground/50")}>
-                             <Icons.Wordpress className="h-4 w-4" /> 
-                             Revista {selectedCity || ''}
+                           <FormLabel className={cn("font-normal", !selectedCity && "opacity-50")}>
+                             <Tooltip>
+                               <TooltipTrigger asChild>
+                                 <Icons.Wordpress className="h-5 w-5" />
+                               </TooltipTrigger>
+                               <TooltipContent>Revista {selectedCity || ''}</TooltipContent>
+                             </Tooltip>
                            </FormLabel>
                          </FormItem>
                          <FormField
@@ -373,8 +392,13 @@ export function PostForm() {
                                     }}
                                   />
                                 </FormControl>
-                                <FormLabel className="font-normal flex items-center gap-2">
-                                  Marketplace Nortedato.cl
+                                <FormLabel className="font-normal">
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <span className="text-xs font-semibold">.CL</span>
+                                    </TooltipTrigger>
+                                    <TooltipContent>Marketplace Nortedato.cl</TooltipContent>
+                                  </Tooltip>
                                 </FormLabel>
                               </FormItem>
                             )}
@@ -580,5 +604,3 @@ export function PostForm() {
     </Form>
   );
 }
-
-    

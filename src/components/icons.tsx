@@ -1,5 +1,5 @@
 import type { LucideProps } from 'lucide-react';
-import { Facebook, Instagram, LayoutDashboard, PencilRuler } from 'lucide-react';
+import { Facebook, Instagram, LayoutDashboard, PencilRuler, Globe } from 'lucide-react';
 
 const Wordpress = (props: LucideProps) => (
   <svg
@@ -16,10 +16,12 @@ const Wordpress = (props: LucideProps) => (
   </svg>
 );
 
+
 export const Icons = {
   Dashboard: LayoutDashboard,
   NewPost: PencilRuler,
   Facebook,
   Instagram,
   Wordpress,
+  Marketplace: Globe,
 };
