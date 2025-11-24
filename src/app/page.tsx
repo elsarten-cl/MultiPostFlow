@@ -24,7 +24,7 @@ export default function HomePage() {
           />
 
           <div className="flex flex-col items-center gap-2">
-             <h1 className="text-5xl font-headline tracking-tight text-foreground">
+             <h1 className="text-5xl font-black tracking-tight text-foreground font-headline">
                 MultiPostFlow
              </h1>
              <div className="flex items-center gap-2">
