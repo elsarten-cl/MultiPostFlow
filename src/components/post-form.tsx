@@ -3,7 +3,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Bot,
   CalendarIcon,
@@ -11,12 +11,10 @@ import {
   Sparkles,
   UploadCloud,
 } from 'lucide-react';
-import { format } from 'date-fns';
 import {
   collection,
   addDoc,
   serverTimestamp,
-  updateDoc,
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
@@ -51,16 +49,22 @@ import {
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { useAuth, useFirestore, useStorage, useUser } from '@/firebase';
 import { useRouter } from 'next/navigation';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+
+const CITIES = ['Arica', 'Iquique', 'Antofagasta', 'Calama', 'Copiapó', 'La Serena'];
 
 const postFormSchema = z.object({
   title: z.string().min(2, {
     message: 'El título debe tener al menos 2 caracteres.',
   }),
-  draft: z.string().min(10, {
-    message: 'El borrador debe tener al menos 10 caracteres.',
+  description: z.string().min(10, {
+    message: 'La descripción debe tener al menos 10 caracteres.',
   }),
-  platforms: z.array(z.string()).refine((value) => value.some((item) => item), {
-    message: 'Tienes que seleccionar al menos una plataforma.',
+  city: z.string({
+    required_error: 'Debes seleccionar una ciudad.',
+  }),
+  platforms: z.array(z.string()).refine((value) => value.length >= 3, {
+    message: 'Debes seleccionar al menos 3 plataformas.',
   }),
   schedule: z.date().optional(),
 });
@@ -89,20 +93,35 @@ export function PostForm() {
     resolver: zodResolver(postFormSchema),
     defaultValues: {
       title: '',
-      draft: '',
-      platforms: [],
+      description: '',
+      platforms: ['facebook', 'instagram'],
     },
   });
+  
+  const selectedCity = form.watch('city');
+  
+  useEffect(() => {
+    // Automatically manage wordpress platform based on city selection
+    const currentPlatforms = form.getValues('platforms');
+    if (selectedCity) {
+      if (!currentPlatforms.includes('wordpress')) {
+        form.setValue('platforms', [...currentPlatforms, 'wordpress']);
+      }
+    } else {
+        form.setValue('platforms', currentPlatforms.filter(p => p !== 'wordpress'));
+    }
+  }, [selectedCity, form]);
+
 
   const selectedPlatforms = form.watch('platforms') as Platform[];
 
   async function handleGenerateContent() {
-    const draft = form.getValues('draft');
+    const draft = form.getValues('description');
     if (!draft || selectedPlatforms.length === 0) {
       toast({
         title: 'Falta Información',
         description:
-          'Por favor escribe un borrador y selecciona al menos una plataforma.',
+          'Por favor escribe una descripción y selecciona al menos una plataforma.',
         variant: 'destructive',
       });
       return;
@@ -112,16 +131,23 @@ export function PostForm() {
     setGeneratedContent({});
 
     try {
-      const promises = selectedPlatforms.map((platform) =>
-        generatePlatformSpecificContent({ draft, platform: platform as 'facebook' | 'instagram' | 'wordpress' })
+      const platformsToGenerate = selectedPlatforms.filter(p => p !== 'marketplace') as ('facebook' | 'instagram' | 'wordpress')[];
+      const promises = platformsToGenerate.map((platform) =>
+        generatePlatformSpecificContent({ draft, platform })
       );
       const results = await Promise.all(promises);
 
       const newContent: GeneratedContent = {};
       results.forEach((result, index) => {
-        const platform = selectedPlatforms[index];
+        const platform = platformsToGenerate[index];
         newContent[platform] = result.platformSpecificContent;
       });
+      
+      // For marketplace, just use the description
+      if(selectedPlatforms.includes('marketplace' as any)) {
+          newContent['marketplace' as any] = form.getValues('description');
+      }
+      
       setGeneratedContent(newContent);
     } catch (error) {
       console.error('Error generando contenido:', error);
@@ -191,7 +217,8 @@ export function PostForm() {
       const postData = {
         userId: user.uid,
         title: data.title,
-        content: data.draft,
+        content: data.description,
+        city: data.city,
         platforms: data.platforms,
         mediaUrls: mediaUrl ? [mediaUrl] : [],
         createdAt: serverTimestamp(),
@@ -208,7 +235,6 @@ export function PostForm() {
         description: 'Tu publicación ha sido enviada para ser procesada.',
       });
       
-      // Reset form and state after successful save
       form.reset();
       setGeneratedContent({});
       setSuggestions({});
@@ -237,7 +263,7 @@ export function PostForm() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-1 space-y-8">
             <Card>
-              <CardContent className="pt-6">
+              <CardContent className="pt-6 space-y-4">
                 <FormField
                   control={form.control}
                   name="title"
@@ -246,7 +272,7 @@ export function PostForm() {
                       <FormLabel>Título de la Publicación</FormLabel>
                       <FormControl>
                         <Input
-                          placeholder="p. ej. Lanzamiento Producto Q4"
+                          placeholder="p. ej. Zapatillas Deportivas XYZ"
                           {...field}
                         />
                       </FormControl>
@@ -257,23 +283,48 @@ export function PostForm() {
                     </FormItem>
                   )}
                 />
+                 <FormField
+                  control={form.control}
+                  name="city"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Ciudad</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                           <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecciona una ciudad" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {CITIES.map(city => (
+                               <SelectItem key={city} value={city}>{city}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      <FormDescription>
+                        Esto determinará en qué revista se publicará.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader>
-                <CardTitle>Borrador</CardTitle>
+                <CardTitle>Plantilla</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <FormField
                   control={form.control}
-                  name="draft"
+                  name="description"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Contenido Base</FormLabel>
+                      <FormLabel>Descripción del Producto/Servicio</FormLabel>
                       <FormControl>
                         <Textarea
-                          placeholder="Escribe tu mensaje principal aquí. La IA lo adaptará para cada plataforma."
+                          placeholder="Describe tu producto o servicio aquí..."
                           className="min-h-[150px]"
                           {...field}
                         />
@@ -289,54 +340,45 @@ export function PostForm() {
                     <FormItem>
                       <div className="mb-4">
                         <FormLabel className="text-base">Plataformas</FormLabel>
-                        <FormDescription>
-                          Selecciona dónde quieres publicar.
-                        </FormDescription>
                       </div>
-                      <div className="space-y-2">
-                        {ALL_PLATFORMS.map((item) => (
-                          <FormField
-                            key={item}
+                      <div className="space-y-3">
+                         <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                           <FormControl><Checkbox checked disabled /></FormControl>
+                           <FormLabel className="font-normal flex items-center gap-2 text-muted-foreground"><Icons.Facebook className="h-4 w-4" /> Facebook</FormLabel>
+                         </FormItem>
+                         <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                           <FormControl><Checkbox checked disabled /></FormControl>
+                           <FormLabel className="font-normal flex items-center gap-2 text-muted-foreground"><Icons.Instagram className="h-4 w-4" /> Instagram</FormLabel>
+                         </FormItem>
+                         <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                           <FormControl><Checkbox checked={!!selectedCity} disabled /></FormControl>
+                           <FormLabel className={cn("font-normal flex items-center gap-2", !selectedCity && "text-muted-foreground/50")}>
+                             <Icons.Wordpress className="h-4 w-4" /> 
+                             Revista {selectedCity || ''}
+                           </FormLabel>
+                         </FormItem>
+                         <FormField
                             control={form.control}
                             name="platforms"
-                            render={({ field }) => {
-                              const Icon =
-                                Icons[
-                                  (item.charAt(0).toUpperCase() +
-                                    item.slice(1)) as keyof typeof Icons
-                                ];
-                              return (
-                                <FormItem
-                                  key={item}
-                                  className="flex flex-row items-center space-x-3 space-y-0"
-                                >
-                                  <FormControl>
-                                    <Checkbox
-                                      checked={field.value?.includes(item)}
-                                      onCheckedChange={(checked) => {
-                                        return checked
-                                          ? field.onChange([
-                                              ...field.value,
-                                              item,
-                                            ])
-                                          : field.onChange(
-                                              field.value?.filter(
-                                                (value) => value !== item
-                                              )
-                                            );
-                                      }}
-                                    />
-                                  </FormControl>
-                                  <FormLabel className="font-normal flex items-center gap-2">
-                                    <Icon className="h-4 w-4" />
-                                    {item.charAt(0).toUpperCase() +
-                                      item.slice(1)}
-                                  </FormLabel>
-                                </FormItem>
-                              );
-                            }}
+                            render={({ field }) => (
+                               <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                                <FormControl>
+                                  <Checkbox
+                                    checked={field.value?.includes('marketplace')}
+                                    onCheckedChange={(checked) => {
+                                      const newPlatforms = checked
+                                        ? [...field.value, 'marketplace']
+                                        : field.value?.filter(v => v !== 'marketplace');
+                                      field.onChange(newPlatforms);
+                                    }}
+                                  />
+                                </FormControl>
+                                <FormLabel className="font-normal flex items-center gap-2">
+                                  Marketplace Nortedato.cl
+                                </FormLabel>
+                              </FormItem>
+                            )}
                           />
-                        ))}
                       </div>
                       <FormMessage />
                     </FormItem>
@@ -413,23 +455,25 @@ export function PostForm() {
                   <div className="text-center text-muted-foreground py-20">
                     <Bot className="mx-auto h-12 w-12" />
                     <p className="mt-4">
-                      Selecciona una plataforma y genera contenido para ver las
+                      Selecciona una ciudad y genera contenido para ver las
                       vistas previas aquí.
                     </p>
                   </div>
                 ) : (
                   <Tabs defaultValue={activeTab} className="w-full">
-                    <TabsList className={cn("grid w-full", selectedPlatforms.length === 1 && "grid-cols-1", selectedPlatforms.length === 2 && "grid-cols-2", selectedPlatforms.length === 3 && "grid-cols-3")}>
+                    <TabsList className={cn("grid w-full", `grid-cols-${selectedPlatforms.length}`)}>
                       {ALL_PLATFORMS.map((platform) => (
                         <TabsTrigger
                           key={platform}
                           value={platform}
                           disabled={!selectedPlatforms.includes(platform)}
                         >
-                          {platform.charAt(0).toUpperCase() +
-                            platform.slice(1)}
+                          {platform === 'wordpress' ? `Revista ${selectedCity}` : platform.charAt(0).toUpperCase() + platform.slice(1)}
                         </TabsTrigger>
                       ))}
+                        {selectedPlatforms.includes('marketplace' as any) && (
+                            <TabsTrigger value="marketplace">Marketplace</TabsTrigger>
+                        )}
                     </TabsList>
                     {selectedPlatforms.map((platform) => (
                       <TabsContent
@@ -453,20 +497,22 @@ export function PostForm() {
                           }
                         />
 
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleGetSuggestions(platform)}
-                          disabled={isSuggesting === platform || !generatedContent[platform]}
-                        >
-                          {isSuggesting === platform ? (
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          ) : (
-                            <Sparkles className="mr-2 h-4 w-4" />
-                          )}
-                          Obtener Sugerencias
-                        </Button>
+                        { platform !== 'marketplace' &&
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleGetSuggestions(platform)}
+                            disabled={isSuggesting === platform || !generatedContent[platform]}
+                          >
+                            {isSuggesting === platform ? (
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                              <Sparkles className="mr-2 h-4 w-4" />
+                            )}
+                            Obtener Sugerencias
+                          </Button>
+                        }
 
                         {suggestions[platform] && (
                           <Alert>
@@ -493,7 +539,7 @@ export function PostForm() {
         <div className="flex justify-end gap-2">
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="critical" disabled={isSaving || isUploading}>
+              <Button type="button" variant="critical" disabled={isSaving || isUploading}>
                 <CalendarIcon className="mr-2 h-4 w-4" />
                 Publicar / Programar
               </Button>

@@ -23,9 +23,26 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import type { Post } from '@/lib/types';
+import type { Post, Platform } from '@/lib/types';
 import StatusBadge from './status-badge';
 import { Icons } from './icons';
+
+function PlatformIcons({ platforms }: { platforms: Platform[] }) {
+    const platformIcons = platforms.map(platform => {
+      if (platform === 'marketplace') {
+        // Special case for marketplace
+        return <span key={platform} className="text-xs font-semibold bg-blue-100 text-blue-800 px-2 py-1 rounded-full">Marketplace</span>;
+      }
+      if(platform === 'wordpress') {
+        return <Icons.Wordpress key={platform} className="h-5 w-5 text-muted-foreground" />
+      }
+      const Icon = Icons[platform.charAt(0).toUpperCase() + platform.slice(1) as keyof typeof Icons];
+      return Icon ? <Icon key={platform} className="h-5 w-5 text-muted-foreground" /> : null;
+    });
+
+    return <div className="flex items-center gap-2">{platformIcons}</div>;
+}
+
 
 export default function PostList({ posts }: { posts: Post[] }) {
   return (
@@ -76,16 +93,11 @@ export default function PostList({ posts }: { posts: Post[] }) {
                   <StatusBadge status={post.status} />
                 </TableCell>
                 <TableCell>
-                  <div className="flex items-center gap-2">
-                    {post.platforms.map((platform) => {
-                      const Icon = Icons[platform.charAt(0).toUpperCase() + platform.slice(1) as keyof typeof Icons];
-                      return <Icon key={platform} className="h-5 w-5 text-muted-foreground" />;
-                    })}
-                  </div>
+                  <PlatformIcons platforms={post.platforms} />
                 </TableCell>
                 <TableCell className="hidden md:table-cell">
                   {post.scheduledAt
-                    ? post.scheduledAt.toLocaleDateString('es-CL', {
+                    ? new Date(post.scheduledAt).toLocaleDateString('es-CL', {
                         year: 'numeric',
                         month: 'long',
                         day: 'numeric',

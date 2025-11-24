@@ -1,9 +1,8 @@
-export type Platform = 'facebook' | 'instagram' | 'wordpress';
+export type Platform = 'facebook' | 'instagram' | 'wordpress' | 'marketplace';
 
 export const ALL_PLATFORMS: Platform[] = ['facebook', 'instagram', 'wordpress'];
 
 export type PostStatus =
-  | 'pending' // Pending approval or scheduling
   | 'processing'
   | 'sent-to-make'
   | 'published'
@@ -15,6 +14,7 @@ export interface Draft {
   userId: string;
   title: string;
   content: string; // The base draft content
+  city: string;
   platformContent: Partial<Record<Platform, string>>; // AI-generated content
   status: PostStatus;
   platforms: Platform[];
