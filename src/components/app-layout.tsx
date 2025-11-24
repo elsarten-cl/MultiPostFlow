@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Button } from './ui/button';
 import {
@@ -25,9 +25,11 @@ import {
 } from './ui/sidebar';
 import { Icons } from './icons';
 import { cn } from '@/lib/utils';
-import { Bot, Loader2, Users } from 'lucide-react';
-import { useUser, useAuth } from '@/firebase';
+import { Bot, Loader2, Users, ShieldAlert, Clock } from 'lucide-react';
+import { useUser, useAuth, useFirestore, useDoc } from '@/firebase';
 import { signOut } from 'firebase/auth';
+import type { UserProfile } from '@/lib/types';
+import { doc } from 'firebase/firestore';
 
 const navItems = [
   { href: '/', icon: Icons.Dashboard, label: 'Panel' },
@@ -38,10 +40,43 @@ const adminNavItems = [
   { href: '/admin/users', icon: Users, label: 'Usuarios' },
 ];
 
+function PendingApprovalScreen() {
+  return (
+    <div className="flex h-screen flex-col items-center justify-center bg-background text-center p-4">
+      <Clock className="h-16 w-16 text-primary mb-4" />
+      <h1 className="text-3xl font-bold tracking-tight mb-2">Cuenta Pendiente de Aprobación</h1>
+      <p className="text-muted-foreground max-w-md">
+        Tu cuenta ha sido registrada correctamente. Un administrador la revisará pronto. Recibirás una notificación cuando sea aprobada.
+      </p>
+    </div>
+  );
+}
+
+function RejectedScreen() {
+  return (
+    <div className="flex h-screen flex-col items-center justify-center bg-background text-center p-4">
+       <ShieldAlert className="h-16 w-16 text-destructive mb-4" />
+      <h1 className="text-3xl font-bold tracking-tight mb-2">Cuenta Rechazada</h1>
+      <p className="text-muted-foreground max-w-md">
+        Lo sentimos, tu cuenta no ha sido aprobada. Si crees que esto es un error, por favor contacta al soporte.
+      </p>
+    </div>
+  );
+}
+
+
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { user, isUserLoading } = useUser();
   const router = useRouter();
+  const firestore = useFirestore();
+
+  const userProfileRef = useMemoFirebase(() => {
+    if (!user) return null;
+    return doc(firestore, 'users', user.uid);
+  }, [firestore, user]);
+
+  const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
 
   useEffect(() => {
     if (!isUserLoading && !user) {
@@ -49,7 +84,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     }
   }, [user, isUserLoading, router]);
 
-  if (isUserLoading || !user) {
+  const isLoading = isUserLoading || isProfileLoading;
+
+  if (isLoading) {
     return (
       <div className="flex h-screen items-center justify-center">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -57,7 +94,19 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     );
   }
 
-  const isAdmin = user.email === 'agencia@elsartenpro.com';
+  if (userProfile?.status === 'pending') {
+    return <PendingApprovalScreen />;
+  }
+
+  if (userProfile?.status === 'rejected') {
+    return <RejectedScreen />;
+  }
+  
+  if (!user) {
+     return null; // or a loading indicator, though the effect should redirect
+  }
+
+  const isAdmin = userProfile?.role === 'admin';
 
   return (
     <SidebarProvider>
@@ -165,4 +214,12 @@ function UserMenu() {
       </DropdownMenuContent>
     </DropdownMenu>
   );
+}
+
+function useMemoFirebase<T>(factory: () => T, deps: React.DependencyList): T {
+  const memoized = React.useMemo(factory, deps);
+  if (typeof memoized === 'object' && memoized !== null) {
+    (memoized as any).__memo = true;
+  }
+  return memoized;
 }

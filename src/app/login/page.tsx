@@ -73,7 +73,8 @@ async function createUserDocument(
     email: user.email,
     name: data.name || user.displayName || user.email?.split('@')[0] || 'Usuario',
     role: isAdmin ? 'admin' : 'user',
-    type: 'revista',
+    type: 'revista', // Default type for new users
+    status: isAdmin ? 'approved' : 'pending', // Admins are auto-approved
     createdAt: serverTimestamp(),
   };
 
@@ -115,13 +116,17 @@ export default function LoginPage() {
           data.password
         );
         await createUserDocument(firestore, userCredential.user, {});
+         toast({
+          title: '¡Registro Exitoso!',
+          description: 'Tu cuenta ha sido creada y está pendiente de aprobación.',
+        });
+        // Don't redirect on signup, let them wait for approval
+        setIsLoading(false);
+        return;
       }
 
       toast({
-        title:
-          action === 'login'
-            ? '¡Has iniciado sesión!'
-            : '¡Cuenta creada con éxito!',
+        title: '¡Has iniciado sesión!',
         description: 'Redirigiendo al panel...',
       });
       router.push('/');

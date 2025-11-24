@@ -20,66 +20,80 @@ service cloud.firestore {
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
-
-    /**
-     * Ensures an update or delete operation targets an existing document
-     * and is performed by the document's owner. This prevents unauthorized
-     * writes and protects against operations on non-existent paths.
-     * @param userId The UID of the user to check for ownership.
-     */
-    function isExistingOwner(userId) {
-      return isOwner(userId) && resource != null;
-    }
     
     function isAdmin() {
-      return isSignedIn() && (request.auth.token.email == 'agencia@elsartenpro.com' || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
+      // Check for the specific admin email OR if the user's document has the 'admin' role.
+      // This get() is safe for rules on single documents, but not for list queries.
+      let isHardcodedAdmin = request.auth.token.email == 'agencia@elsartenpro.com';
+      let userHasAdminRole = isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      return isHardcodedAdmin || userHasAdminRole;
     }
 
-
+    function isApprovedUser(userId) {
+      return isSignedIn() && get(/databases/$(database)/documents/users/$(userId)).data.status == 'approved';
+    }
+    
     /**
-     * Validates the structure and integrity of a user document upon creation.
+     * Validates the structure and integrity of a new user document upon creation.
      */
     function isValidNewUser(userId) {
         let data = request.resource.data;
         let isAdminAttempt = data.role == 'admin';
         let isFirstAdmin = data.email == 'agencia@elsartenpro.com';
 
+        // All new users must be created with 'pending' status and 'user' role
         return isOwner(userId) && 
                data.id == userId &&
                data.email == request.auth.token.email &&
-               (!isAdminAttempt || (isAdminAttempt && isFirstAdmin)) &&
-               (data.role == 'user' || (data.role == 'admin' && isFirstAdmin)) &&
-               data.type in ['revista', 'marketplace', 'ambos'];
+               data.name == (request.auth.token.name || request.auth.token.email.split('@')[0]) &&
+               data.status == 'pending' &&
+               data.type == 'revista' && // Default type
+               (!isAdminAttempt || (isAdminAttempt && isFirstAdmin)) && // Prevent self-proclaiming admin
+               (data.role == 'user' || (data.role == 'admin' && isFirstAdmin));
     }
-    
+
+    /**
+     * Validates updates to a user document.
+     */
+    function isValidUserUpdate(userId) {
+      let data = request.resource.data;
+      let existingData = resource.data;
+
+      // Regular users can only update their own name.
+      let isUserUpdatingName = isOwner(userId) &&
+                               data.keys().hasOnly(['name']) &&
+                               data.name != existingData.name;
+      
+      // Admins can update 'role', 'type', and 'status'. They cannot change other fields.
+      let isAdminUpdatingPermissions = isAdmin() &&
+                                       data.id == existingData.id &&
+                                       data.email == existingData.email &&
+                                       data.createdAt == existingData.createdAt &&
+                                       (data.role != existingData.role || data.type != existingData.type || data.status != existingData.status);
+
+      return isUserUpdatingName || isAdminUpdatingPermissions;
+    }
+
     match /users/{userId} {
       allow get: if isOwner(userId) || isAdmin();
-      allow list: if isAdmin();
+      // Only admins can list users. The rule is simplified to check the email directly
+      // to avoid a complex query that Firestore rules cannot handle for 'list'.
+      allow list: if request.auth.token.email == 'agencia@elsartenpro.com';
       allow create: if isValidNewUser(userId);
-      allow update: if isExistingOwner(userId) || isAdmin();
-      allow delete: if isExistingOwner(userId);
+      allow update: if isValidUserUpdate(userId);
+      // Only admins can delete users, but not themselves.
+      allow delete: if isAdmin() && request.auth.uid != userId;
 
       match /drafts/{draftId} {
-        allow get: if isOwner(userId) || isAdmin();
-        allow list: if isOwner(userId) || isAdmin();
-        allow create: if isOwner(userId) && request.resource.data.userId == userId;
-        allow update: if (isOwner(userId) || isAdmin()) && request.resource.data.userId == resource.data.id;
-        allow delete: if isOwner(userId) || isAdmin();
+        allow read, write: if isSignedIn() && isApprovedUser(userId) && isOwner(userId);
       }
+
       match /postStates/{postStateId} {
-        allow get: if isOwner(userId) || isAdmin();
-        allow list: if isOwner(userId) || isAdmin();
-        allow create: if isOwner(userId) || isAdmin();
-        allow update: if isOwner(userId) || isAdmin();
-        allow delete: if isOwner(userId) || isAdmin();
+        allow read, write: if isSignedIn() && isApprovedUser(userId) && isOwner(userId);
       }
 
       match /automationLogs/{automationLogId} {
-        allow get: if isOwner(userId) || isAdmin();
-        allow list: if isOwner(userId) || isAdmin();
-        allow create: if isOwner(userId) || isAdmin();
-        allow update: if isOwner(userId) || isAdmin();
-        allow delete: if isOwner(userId) || isAdmin();
+        allow read, write: if isSignedIn() && isApprovedUser(userId) && isOwner(userId);
       }
     }
   }

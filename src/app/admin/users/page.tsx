@@ -3,7 +3,7 @@
 import { useMemoFirebase } from '@/firebase/provider';
 import { useCollection, useFirestore, useUser } from '@/firebase';
 import { collection, doc, updateDoc } from 'firebase/firestore';
-import type { UserProfile } from '@/lib/types';
+import type { UserProfile, UserStatus } from '@/lib/types';
 import {
   Table,
   TableBody,
@@ -28,16 +28,27 @@ import {
 } from '@/components/ui/select';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import AppLayout from '@/components/app-layout';
-import { Loader2 } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
+
+const statusColors: Record<UserStatus, string> = {
+  pending: 'bg-yellow-500 hover:bg-yellow-500',
+  approved: 'bg-green-500 hover:bg-green-500',
+  rejected: 'bg-red-500 hover:bg-red-500',
+};
 
 export default function UsersAdminPage() {
   const firestore = useFirestore();
   const { user, isUserLoading } = useUser();
   const router = useRouter();
+  const { toast } = useToast();
 
   const usersQuery = useMemoFirebase(() => {
-    if (!user) return null;
+    if (!user || user.email !== 'agencia@elsartenpro.com') return null;
     return collection(firestore, 'users');
   }, [firestore, user]);
 
@@ -58,6 +69,24 @@ export default function UsersAdminPage() {
     await updateDoc(userRef, { type });
   };
 
+  const handleStatusChange = async (userId: string, status: UserStatus) => {
+    const userRef = doc(firestore, 'users', userId);
+    try {
+      await updateDoc(userRef, { status });
+      toast({
+        title: 'Estado Actualizado',
+        description: `El estado del usuario ha sido cambiado a ${status}.`,
+      });
+    } catch (error) {
+      console.error("Error updating user status:", error);
+      toast({
+        title: 'Error',
+        description: 'No se pudo actualizar el estado del usuario.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   return (
     <AppLayout>
       <div className="flex flex-col gap-8">
@@ -65,7 +94,7 @@ export default function UsersAdminPage() {
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Administración de Usuarios</h1>
             <p className="text-muted-foreground">
-              Gestiona los roles y tipos de los usuarios.
+              Gestiona los roles, tipos y estado de los usuarios.
             </p>
           </div>
         </div>
@@ -89,9 +118,10 @@ export default function UsersAdminPage() {
                   <TableRow>
                     <TableHead>Usuario</TableHead>
                     <TableHead>Email</TableHead>
+                    <TableHead>Estado</TableHead>
                     <TableHead>Rol</TableHead>
                     <TableHead>Tipo</TableHead>
-                    <TableHead>Fecha de Creación</TableHead>
+                    <TableHead>Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -100,12 +130,17 @@ export default function UsersAdminPage() {
                       <TableCell>
                         <div className="flex items-center gap-3">
                           <Avatar>
-                            <AvatarFallback>{u.name.charAt(0)}</AvatarFallback>
+                            <AvatarFallback>{u.name?.charAt(0) ?? 'U'}</AvatarFallback>
                           </Avatar>
                           <span className="font-medium">{u.name}</span>
                         </div>
                       </TableCell>
                       <TableCell>{u.email}</TableCell>
+                      <TableCell>
+                        <Badge className={cn('text-white', statusColors[u.status])}>
+                          {u.status}
+                        </Badge>
+                      </TableCell>
                       <TableCell>
                         <Select
                           value={u.role}
@@ -137,7 +172,16 @@ export default function UsersAdminPage() {
                         </Select>
                       </TableCell>
                       <TableCell>
-                        {new Date(u.createdAt.seconds * 1000).toLocaleDateString()}
+                        {u.status === 'pending' && (
+                           <div className="flex gap-2">
+                            <Button size="icon" variant="outline" className="text-green-600 hover:text-green-700 border-green-600 hover:bg-green-50" onClick={() => handleStatusChange(u.id, 'approved')}>
+                              <CheckCircle className="h-4 w-4" />
+                            </Button>
+                             <Button size="icon" variant="outline" className="text-red-600 hover:text-red-700 border-red-600 hover:bg-red-50" onClick={() => handleStatusChange(u.id, 'rejected')}>
+                              <XCircle className="h-4 w-4" />
+                            </Button>
+                           </div>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}

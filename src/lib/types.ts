@@ -24,6 +24,7 @@ export interface Post {
 
 export type UserRole = 'admin' | 'user';
 export type UserType = 'revista' | 'marketplace' | 'ambos';
+export type UserStatus = 'pending' | 'approved' | 'rejected';
 
 export interface UserProfile {
   id: string;
@@ -31,5 +32,6 @@ export interface UserProfile {
   email: string;
   role: UserRole;
   type: UserType;
-  createdAt: Date;
+  status: UserStatus;
+  createdAt: any; // Can be Date or FieldValue
 }
