@@ -227,6 +227,12 @@ export function PostForm() {
     try {
       const result = await enhanceImage({ photoDataUri: mediaPreview });
       setMediaPreview(result.enhancedPhotoDataUri);
+      // Convert the enhanced base64 data URL back to a File object to keep consistency if needed, though not strictly required for upload
+      const response = await fetch(result.enhancedPhotoDataUri);
+      const blob = await response.blob();
+      const enhancedFile = new File([blob], selectedFile?.name || 'enhanced-image.jpg', { type: blob.type });
+      setSelectedFile(enhancedFile);
+
       toast({
         title: 'Imagen Mejorada',
         description: 'La IA ha mejorado tu imagen. La nueva versión se muestra ahora.',
@@ -256,19 +262,14 @@ export function PostForm() {
     setIsSaving(true);
     try {
       let mediaUrl = '';
-      if (mediaPreview) {
+      if (selectedFile) {
         setIsUploading(true);
-        const fileName = selectedFile?.name || `${mediaType}.jpg`;
+        const fileName = selectedFile.name;
         const storageRef = ref(storage, `users/${user.uid}/${Date.now()}-${fileName}`);
         
-        // If it's a data URL (potentially enhanced image), upload it as a string
-        if (mediaPreview.startsWith('data:')) {
-            const uploadTask = await uploadString(storageRef, mediaPreview, 'data_url');
-            mediaUrl = await getDownloadURL(uploadTask.ref);
-        } else if (selectedFile) { // otherwise, upload the original file
-            const uploadTask = await uploadBytes(storageRef, selectedFile);
-            mediaUrl = await getDownloadURL(uploadTask.ref);
-        }
+        const uploadTask = await uploadBytes(storageRef, selectedFile);
+        mediaUrl = await getDownloadURL(uploadTask.ref);
+
         setIsUploading(false);
       }
       
@@ -526,7 +527,7 @@ export function PostForm() {
                                  }}
                                />
                              </FormControl>
-                             <FormLabel className="font-normal">
+                             <FormLabel className="font-normal cursor-pointer">
                                <Tooltip>
                                  <TooltipTrigger asChild>
                                     <Image src="https://nortedato.cl/wp-content/uploads/2025/10/Facebook.png" alt="Facebook Logo" width={28} height={28} />
@@ -547,7 +548,7 @@ export function PostForm() {
                                  }}
                                />
                              </FormControl>
-                             <FormLabel className="font-normal">
+                             <FormLabel className="font-normal cursor-pointer">
                                <Tooltip>
                                  <TooltipTrigger asChild>
                                    <Image src="https://nortedato.cl/wp-content/uploads/2025/10/Instagram.png" alt="Instagram Logo" width={28} height={28} />
@@ -556,7 +557,7 @@ export function PostForm() {
                                </Tooltip>
                              </FormLabel>
                            </FormItem>
-                           <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                           <FormItem className="flex flex-row items-center space-x-3 space-y-0">
                               <FormControl>
                                <Checkbox 
                                  checked={field.value?.includes('wordpress')}
@@ -578,7 +579,7 @@ export function PostForm() {
                                </Tooltip>
                              </FormLabel>
                            </FormItem>
-                           <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                           <FormItem className="flex flex-row items-center space-x-3 space-y-0">
                              <FormControl>
                                <Checkbox
                                  checked={field.value?.includes('marketplace')}
@@ -713,7 +714,7 @@ export function PostForm() {
                         if (fileInputRef.current) fileInputRef.current.value = '';
                       }}>Cambiar archivo</Button>
                       
-                      {mediaType === 'image' && (
+                      {mediaType === 'image' && mediaPreview && (
                         <Button type="button" size="sm" onClick={handleEnhanceImage} disabled={isEnhancing}>
                           {isEnhancing ? (
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -861,3 +862,5 @@ export function PostForm() {
     </Form>
   );
 }
+
+    
