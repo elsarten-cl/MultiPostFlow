@@ -51,7 +51,7 @@ import { useAuth, useFirestore, useStorage, useUser } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 
-const CITIES = ['Arica', 'Iquique', 'Antofagasta', 'Calama', 'Copiapó', 'La Serena'];
+const CITIES = ['Arica', 'Iquique', 'Antofagasta', 'Calama', 'Tacna'];
 
 const postFormSchema = z.object({
   title: z.string().min(2, {
