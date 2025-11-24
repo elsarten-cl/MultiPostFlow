@@ -32,7 +32,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
@@ -442,7 +442,7 @@ export function PostForm() {
                                </Tooltip>
                              </FormLabel>
                            </FormItem>
-                           <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                           <FormItem className="flex flex-row items-start space-x-3 space-y-0">
                               <FormControl>
                                <Checkbox 
                                  checked={field.value?.includes('wordpress')}
@@ -464,7 +464,7 @@ export function PostForm() {
                                </Tooltip>
                              </FormLabel>
                            </FormItem>
-                           <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                           <FormItem className="flex flex-row items-start space-x-3 space-y-0">
                              <FormControl>
                                <Checkbox
                                  checked={field.value?.includes('marketplace')}
@@ -689,4 +689,5 @@ export function PostForm() {
   );
 
     
+
 
