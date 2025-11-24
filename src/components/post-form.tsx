@@ -3,7 +3,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import Image from 'next/image';
 import {
   Bot,
@@ -11,13 +11,15 @@ import {
   Loader2,
   Sparkles,
   UploadCloud,
+  Image as ImageIcon,
+  Video,
 } from 'lucide-react';
 import {
   collection,
   addDoc,
   serverTimestamp,
 } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { ref, uploadString, getDownloadURL, uploadBytes } from 'firebase/storage';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -39,18 +41,19 @@ import { Calendar } from '@/components/ui/calendar';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import type { Platform, PostStatus } from '@/lib/types';
-import { ALL_PLATFORMS } from '@/lib/types';
 import {
   generatePlatformSpecificContent,
 } from '@/ai/flows/generate-platform-specific-content';
 import {
   getContentImprovementSuggestions,
 } from '@/ai/flows/content-improvement-suggestions';
+import { enhanceImage } from '@/ai/flows/image-enhancement';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { useUser, useFirestore, useStorage } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from './ui/tooltip';
+import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 
 const CITIES = ['Arica', 'Iquique', 'Antofagasta', 'Calama', 'Tacna'];
 
@@ -65,7 +68,6 @@ const postFormSchema = z.object({
     message: 'Debes seleccionar al menos una plataforma.',
   }),
   schedule: z.date().optional(),
-  // New structured content fields based on user request
   nombreEmprendimiento: z.string().min(3, { message: "El nombre es requerido." }),
   queOfreces: z.string().min(10, { message: "Cuéntanos qué haces y por qué es especial." }),
   queProblemaResuelves: z.string().min(10, { message: "Explica qué problema resuelves." }),
@@ -73,12 +75,22 @@ const postFormSchema = z.object({
   conexionTerritorio: z.string().min(10, { message: "La conexión con tu comunidad es clave." }),
   queQuieresQueHagaLaGente: z.string().min(5, { message: "El llamado a la acción es requerido." }),
   datosContacto: z.string().min(5, { message: "Los datos de contacto son requeridos." }),
+  mediaType: z.enum(['image', 'video']).default('image'),
 });
 
 type PostFormValues = z.infer<typeof postFormSchema>;
 
 type GeneratedContent = Partial<Record<Platform, string>>;
 type Suggestions = Partial<Record<Platform, string[]>>;
+
+function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
 
 export function PostForm() {
   const [isGenerating, setIsGenerating] = useState(false);
@@ -87,7 +99,11 @@ export function PostForm() {
   const [generatedContent, setGeneratedContent] = useState<GeneratedContent>({});
   const [suggestions, setSuggestions] = useState<Suggestions>({});
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [mediaPreview, setMediaPreview] = useState<string | null>(null);
+  const [isEnhancing, setIsEnhancing] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const { toast } = useToast();
   const { user } = useUser();
   const firestore = useFirestore();
@@ -107,12 +123,13 @@ export function PostForm() {
       conexionTerritorio: '',
       queQuieresQueHagaLaGente: '',
       datosContacto: '',
+      mediaType: 'image',
     },
   });
   
   const selectedCity = form.watch('city');
-  
   const selectedPlatforms = form.watch('platforms') as Platform[];
+  const mediaType = form.watch('mediaType');
 
   async function handleGenerateContent() {
     const formValues = form.getValues();
@@ -139,9 +156,9 @@ export function PostForm() {
     setGeneratedContent({});
 
     try {
-      const platformsToGenerate = selectedPlatforms.filter(p => p !== 'marketplace') as ('facebook' | 'instagram' | 'wordpress')[];
+      const platformsToGenerate = selectedPlatforms.filter(p => !['marketplace'].includes(p)) as ('facebook' | 'instagram' | 'wordpress')[];
       const promises = platformsToGenerate.map((platform) =>
-        generatePlatformSpecificContent({ draft, platform: platform === 'wordpress' ? 'wordpress' : platform.toLowerCase() as 'facebook' | 'instagram' })
+        generatePlatformSpecificContent({ draft, platform })
       );
       const results = await Promise.all(promises);
 
@@ -195,11 +212,37 @@ export function PostForm() {
     }
   }
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files && event.target.files[0]) {
-      setSelectedFile(event.target.files[0]);
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+      const dataUrl = await fileToDataUrl(file);
+      setMediaPreview(dataUrl);
     }
   };
+
+  const handleEnhanceImage = async () => {
+    if (!mediaPreview || mediaType !== 'image') return;
+    setIsEnhancing(true);
+    try {
+      const result = await enhanceImage({ photoDataUri: mediaPreview });
+      setMediaPreview(result.enhancedPhotoDataUri);
+      toast({
+        title: 'Imagen Mejorada',
+        description: 'La IA ha mejorado tu imagen. La nueva versión se muestra ahora.',
+      });
+    } catch (error) {
+      console.error('Error mejorando la imagen:', error);
+      toast({
+        title: 'Error al Mejorar Imagen',
+        description: 'No se pudo procesar la mejora de la imagen. Inténtalo de nuevo.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsEnhancing(false);
+    }
+  };
+
   
   const onSubmit = async (data: PostFormValues) => {
     const scheduleDate = form.getValues('schedule');
@@ -213,18 +256,26 @@ export function PostForm() {
     setIsSaving(true);
     try {
       let mediaUrl = '';
-      if (selectedFile) {
+      if (mediaPreview) {
         setIsUploading(true);
-        const storageRef = ref(storage, `users/${user.uid}/${Date.now()}-${selectedFile.name}`);
-        const uploadTask = await uploadBytes(storageRef, selectedFile);
-        mediaUrl = await getDownloadURL(uploadTask.ref);
+        const fileName = selectedFile?.name || `${mediaType}.jpg`;
+        const storageRef = ref(storage, `users/${user.uid}/${Date.now()}-${fileName}`);
+        
+        // If it's a data URL (potentially enhanced image), upload it as a string
+        if (mediaPreview.startsWith('data:')) {
+            const uploadTask = await uploadString(storageRef, mediaPreview, 'data_url');
+            mediaUrl = await getDownloadURL(uploadTask.ref);
+        } else if (selectedFile) { // otherwise, upload the original file
+            const uploadTask = await uploadBytes(storageRef, selectedFile);
+            mediaUrl = await getDownloadURL(uploadTask.ref);
+        }
         setIsUploading(false);
       }
       
       const postData = {
         userId: user.uid,
         title: data.title,
-        content: { // Store structured content from the new form
+        content: {
           nombreEmprendimiento: data.nombreEmprendimiento,
           queOfreces: data.queOfreces,
           queProblemaResuelves: data.queProblemaResuelves,
@@ -254,6 +305,7 @@ export function PostForm() {
       setGeneratedContent({});
       setSuggestions({});
       setSelectedFile(null);
+      setMediaPreview(null);
       router.push('/');
       
     } catch (error) {
@@ -461,7 +513,7 @@ export function PostForm() {
                   render={({ field }) => (
                     <FormItem>
                       <TooltipProvider>
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-6">
                            <FormItem className="flex flex-row items-center space-x-3 space-y-0">
                              <FormControl>
                                <Checkbox 
@@ -573,44 +625,107 @@ export function PostForm() {
             <Card>
               <CardHeader>
                 <CardTitle>Multimedia</CardTitle>
+                <CardDescription>Sube una imagen o video para tu publicación.</CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-center w-full">
-                  <label
-                    htmlFor="dropzone-file"
-                    className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-lg cursor-pointer bg-card hover:bg-muted"
-                  >
-                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                      {isUploading ? (
-                         <Loader2 className="w-8 h-8 mb-4 text-muted-foreground animate-spin" />
+              <CardContent className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="mediaType"
+                  render={({ field }) => (
+                    <FormItem className="space-y-3">
+                      <FormLabel>Tipo de Contenido</FormLabel>
+                      <FormControl>
+                        <RadioGroup
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                            setMediaPreview(null);
+                            setSelectedFile(null);
+                            if (fileInputRef.current) {
+                              fileInputRef.current.value = '';
+                            }
+                          }}
+                          defaultValue={field.value}
+                          className="flex gap-4"
+                        >
+                          <FormItem className="flex items-center space-x-2 space-y-0">
+                            <FormControl>
+                              <RadioGroupItem value="image" id="r1" />
+                            </FormControl>
+                            <FormLabel htmlFor="r1" className="font-normal flex items-center gap-2"><ImageIcon/> Imagen</FormLabel>
+                          </FormItem>
+                          <FormItem className="flex items-center space-x-2 space-y-0">
+                            <FormControl>
+                              <RadioGroupItem value="video" id="r2" />
+                            </FormControl>
+                            <FormLabel htmlFor="r2" className="font-normal flex items-center gap-2"><Video /> Video</FormLabel>
+                          </FormItem>
+                        </RadioGroup>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {!mediaPreview ? (
+                  <div className="flex items-center justify-center w-full">
+                    <label
+                      htmlFor="dropzone-file"
+                      className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-lg cursor-pointer bg-card hover:bg-muted"
+                    >
+                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                        <UploadCloud className="w-8 h-8 mb-4 text-muted-foreground" />
+                        <p className="mb-2 text-sm text-muted-foreground text-center">
+                          <span className="font-semibold">Haz clic para subir</span> o arrastra y suelta
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {mediaType === 'image' ? 'Imagen (PNG, JPG, etc.)' : 'Video (MP4, MOV, etc.)'}
+                        </p>
+                      </div>
+                      <Input
+                        id="dropzone-file"
+                        ref={fileInputRef}
+                        type="file"
+                        accept={mediaType === 'image' ? 'image/*' : 'video/*'}
+                        className="hidden"
+                        onChange={handleFileChange}
+                        disabled={isUploading || isSaving}
+                      />
+                    </label>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="relative w-full aspect-video rounded-lg overflow-hidden border">
+                      {mediaType === 'image' ? (
+                        <Image src={mediaPreview} alt="Vista previa" layout="fill" objectFit="contain" />
                       ) : (
-                         <UploadCloud className="w-8 h-8 mb-4 text-muted-foreground" />
+                        <video src={mediaPreview} controls className="w-full h-full" />
                       )}
-                      {selectedFile ? (
-                        <p className="mb-2 text-sm text-primary text-center">{selectedFile.name}</p>
-                      ) : (
-                        <>
-                          <p className="mb-2 text-sm text-muted-foreground text-center">
-                            <span className="font-semibold">
-                              Haz clic para subir
-                            </span>{' '}
-                            o arrastra y suelta
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            Imagen o Video
-                          </p>
-                        </>
+                      {(isUploading || isEnhancing) && (
+                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                          <Loader2 className="h-8 w-8 animate-spin text-white" />
+                        </div>
                       )}
                     </div>
-                    <Input
-                      id="dropzone-file"
-                      type="file"
-                      className="hidden"
-                      onChange={handleFileChange}
-                      disabled={isUploading || isSaving}
-                    />
-                  </label>
-                </div>
+                    <div className="flex gap-2 justify-center">
+                      <Button type="button" variant="outline" size="sm" onClick={() => {
+                        setMediaPreview(null);
+                        setSelectedFile(null);
+                        if (fileInputRef.current) fileInputRef.current.value = '';
+                      }}>Cambiar archivo</Button>
+                      
+                      {mediaType === 'image' && (
+                        <Button type="button" size="sm" onClick={handleEnhanceImage} disabled={isEnhancing}>
+                          {isEnhancing ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          ) : (
+                            <Sparkles className="mr-2 h-4 w-4" />
+                          )}
+                          Mejorar Imagen con IA
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -625,25 +740,21 @@ export function PostForm() {
                   <div className="text-center text-muted-foreground py-20">
                     <Bot className="mx-auto h-12 w-12" />
                     <p className="mt-4">
-                      Selecciona una ciudad y genera contenido para ver las
+                      Selecciona una plataforma y genera contenido para ver las
                       vistas previas aquí.
                     </p>
                   </div>
                 ) : (
                   <Tabs defaultValue={activeTab} className="w-full">
                     <TabsList className={cn("grid w-full", `grid-cols-${selectedPlatforms.length}`)}>
-                      {ALL_PLATFORMS.map((platform) => (
+                      {selectedPlatforms.map((platform) => (
                         <TabsTrigger
                           key={platform}
                           value={platform}
-                          disabled={!selectedPlatforms.includes(platform)}
                         >
                           {platform === 'wordpress' ? `Revista ${selectedCity || ''}` : platform.charAt(0).toUpperCase() + platform.slice(1)}
                         </TabsTrigger>
                       ))}
-                      {selectedPlatforms.includes('marketplace') && (
-                          <TabsTrigger value="marketplace">Marketplace</TabsTrigger>
-                      )}
                     </TabsList>
                     {selectedPlatforms.map((platform) => (
                       <TabsContent
@@ -709,7 +820,7 @@ export function PostForm() {
         <div className="flex justify-end gap-2">
           <Popover>
             <PopoverTrigger asChild>
-              <Button type="button" variant="critical" disabled={isSaving || isUploading}>
+              <Button type="button" variant="critical" disabled={isSaving || isUploading || isEnhancing}>
                 <CalendarIcon className="mr-2 h-4 w-4" />
                 Publicar / Programar
               </Button>
@@ -738,8 +849,8 @@ export function PostForm() {
                 )}
               />
               <div className="p-4 border-t flex justify-end">
-                 <Button type="submit" disabled={isSaving || isUploading}>
-                   {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                 <Button type="submit" disabled={isSaving || isUploading || isEnhancing}>
+                   {(isSaving || isUploading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                    {form.watch('schedule') ? 'Programar Publicación' : 'Publicar Ahora'}
                  </Button>
               </div>
@@ -749,8 +860,4 @@ export function PostForm() {
       </form>
     </Form>
   );
-
-    
-
-
-
+}
