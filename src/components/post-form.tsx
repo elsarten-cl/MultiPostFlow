@@ -63,8 +63,8 @@ const postFormSchema = z.object({
   city: z.string({
     required_error: 'Debes seleccionar una ciudad.',
   }),
-  platforms: z.array(z.string()).refine((value) => value.length >= 3, {
-    message: 'Debes seleccionar al menos 3 plataformas.',
+  platforms: z.array(z.string()).refine((value) => value.length > 0, {
+    message: 'Debes seleccionar al menos una plataforma.',
   }),
   schedule: z.date().optional(),
 });
@@ -341,16 +341,16 @@ export function PostForm() {
                       <div className="mb-4">
                         <FormLabel className="text-base">Plataformas</FormLabel>
                       </div>
-                      <div className="space-y-3">
-                         <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                      <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+                         <FormItem className="flex flex-row items-center space-x-2 space-y-0">
                            <FormControl><Checkbox checked disabled /></FormControl>
                            <FormLabel className="font-normal flex items-center gap-2 text-muted-foreground"><Icons.Facebook className="h-4 w-4" /> Facebook</FormLabel>
                          </FormItem>
-                         <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                         <FormItem className="flex flex-row items-center space-x-2 space-y-0">
                            <FormControl><Checkbox checked disabled /></FormControl>
                            <FormLabel className="font-normal flex items-center gap-2 text-muted-foreground"><Icons.Instagram className="h-4 w-4" /> Instagram</FormLabel>
                          </FormItem>
-                         <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                         <FormItem className="flex flex-row items-center space-x-2 space-y-0">
                            <FormControl><Checkbox checked={!!selectedCity} disabled /></FormControl>
                            <FormLabel className={cn("font-normal flex items-center gap-2", !selectedCity && "text-muted-foreground/50")}>
                              <Icons.Wordpress className="h-4 w-4" /> 
@@ -361,7 +361,7 @@ export function PostForm() {
                             control={form.control}
                             name="platforms"
                             render={({ field }) => (
-                               <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                               <FormItem className="flex flex-row items-center space-x-2 space-y-0">
                                 <FormControl>
                                   <Checkbox
                                     checked={field.value?.includes('marketplace')}
@@ -580,3 +580,5 @@ export function PostForm() {
     </Form>
   );
 }
+
+    
