@@ -39,7 +39,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import type { Platform } from '@/lib/types';
+import type { Platform, PostStatus } from '@/lib/types';
 import { ALL_PLATFORMS } from '@/lib/types';
 import { Icons } from './icons';
 import {
@@ -50,6 +50,7 @@ import {
 } from '@/ai/flows/content-improvement-suggestions';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { useAuth, useFirestore, useStorage, useUser } from '@/firebase';
+import { useRouter } from 'next/navigation';
 
 const postFormSchema = z.object({
   title: z.string().min(2, {
@@ -81,6 +82,8 @@ export function PostForm() {
   const { user } = useUser();
   const firestore = useFirestore();
   const storage = useStorage();
+  const router = useRouter();
+
 
   const form = useForm<PostFormValues>({
     resolver: zodResolver(postFormSchema),
@@ -110,7 +113,7 @@ export function PostForm() {
 
     try {
       const promises = selectedPlatforms.map((platform) =>
-        generatePlatformSpecificContent({ draft, platform })
+        generatePlatformSpecificContent({ draft, platform: platform as 'facebook' | 'instagram' | 'wordpress' })
       );
       const results = await Promise.all(promises);
 
@@ -165,22 +168,29 @@ export function PostForm() {
     }
   };
 
-  async function handleSaveDraft() {
+  async function handleSave(status: PostStatus, scheduleDate?: Date) {
     if (!user) {
       toast({ title: 'No estás autenticado.', variant: 'destructive' });
-      return;
+      return false;
+    }
+
+    // Trigger validation
+    const isValid = await form.trigger();
+    if (!isValid) {
+      toast({ title: 'Por favor, completa todos los campos requeridos.', variant: 'destructive' });
+      return false;
     }
 
     const data = form.getValues();
     
     setIsSaving(true);
     try {
-      let imageUrl = '';
+      let mediaUrl = '';
       if (selectedFile) {
         setIsUploading(true);
-        const storageRef = ref(storage, `users/${user.uid}/${selectedFile.name}`);
+        const storageRef = ref(storage, `users/${user.uid}/${Date.now()}-${selectedFile.name}`);
         const uploadTask = await uploadBytes(storageRef, selectedFile);
-        imageUrl = await getDownloadURL(uploadTask.ref);
+        mediaUrl = await getDownloadURL(uploadTask.ref);
         setIsUploading(false);
       }
       
@@ -189,43 +199,48 @@ export function PostForm() {
         title: data.title,
         content: data.draft,
         platforms: data.platforms,
-        mediaUrls: imageUrl ? [imageUrl] : [],
+        mediaUrls: mediaUrl ? [mediaUrl] : [],
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
-        status: 'draft', // Initial status
-        platformContent: generatedContent, // Save AI generated content too
+        status: status,
+        scheduledAt: status === 'scheduled' ? scheduleDate : null,
+        platformContent: generatedContent,
       };
 
       const docRef = await addDoc(collection(firestore, 'users', user.uid, 'drafts'), draftData);
 
       toast({
-        title: 'Borrador Guardado',
-        description: 'Tu publicación ha sido guardada como borrador.',
+        title: status === 'draft' ? 'Borrador Guardado' : 'Publicación Enviada',
+        description: status === 'draft' ? 'Tu publicación ha sido guardada.' : 'Tu publicación ha sido enviada para ser procesada.',
       });
       
-      // Optionally reset form
-      // form.reset();
-      // setSelectedFile(null);
-      // setGeneratedContent({});
+      // Reset form and state after successful save
+      form.reset();
+      setGeneratedContent({});
+      setSuggestions({});
+      setSelectedFile(null);
+      router.push('/');
+      return true;
       
     } catch (error) {
-      console.error('Error guardando el borrador:', error);
+      console.error('Error guardando:', error);
       toast({
         title: 'Error al Guardar',
-        description: 'Hubo un problema al guardar el borrador.',
+        description: 'Hubo un problema al guardar tu publicación.',
         variant: 'destructive',
       });
+      return false;
     } finally {
       setIsSaving(false);
+      setIsUploading(false);
     }
   }
-
-
-  function onSubmit(data: PostFormValues) {
-    // This will eventually trigger the Make.com workflow
-    console.log("Submitting for publishing:", data);
-    handleSaveDraft(); // For now, it just saves a draft
-  }
+  
+  const onSubmit = async (data: PostFormValues) => {
+    const scheduleDate = form.getValues('schedule');
+    const status: PostStatus = scheduleDate ? 'scheduled' : 'sent-to-make';
+    await handleSave(status, scheduleDate);
+  };
 
   const activeTab =
     selectedPlatforms.length > 0 ? selectedPlatforms[0] : undefined;
@@ -345,7 +360,7 @@ export function PostForm() {
                   type="button"
                   className="w-full"
                   onClick={handleGenerateContent}
-                  disabled={isGenerating}
+                  disabled={isGenerating || selectedPlatforms.length === 0}
                 >
                   {isGenerating ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -374,10 +389,10 @@ export function PostForm() {
                          <UploadCloud className="w-8 h-8 mb-4 text-muted-foreground" />
                       )}
                       {selectedFile ? (
-                        <p className="mb-2 text-sm text-primary">{selectedFile.name}</p>
+                        <p className="mb-2 text-sm text-primary text-center">{selectedFile.name}</p>
                       ) : (
                         <>
-                          <p className="mb-2 text-sm text-muted-foreground">
+                          <p className="mb-2 text-sm text-muted-foreground text-center">
                             <span className="font-semibold">
                               Haz clic para subir
                             </span>{' '}
@@ -394,7 +409,7 @@ export function PostForm() {
                       type="file"
                       className="hidden"
                       onChange={handleFileChange}
-                      disabled={isUploading}
+                      disabled={isUploading || isSaving}
                     />
                   </label>
                 </div>
@@ -418,7 +433,7 @@ export function PostForm() {
                   </div>
                 ) : (
                   <Tabs defaultValue={activeTab} className="w-full">
-                    <TabsList className="grid w-full grid-cols-3">
+                    <TabsList className={cn("grid w-full", selectedPlatforms.length === 1 && "grid-cols-1", selectedPlatforms.length === 2 && "grid-cols-2", selectedPlatforms.length === 3 && "grid-cols-3")}>
                       {ALL_PLATFORMS.map((platform) => (
                         <TabsTrigger
                           key={platform}
@@ -457,7 +472,7 @@ export function PostForm() {
                           variant="outline"
                           size="sm"
                           onClick={() => handleGetSuggestions(platform)}
-                          disabled={isSuggesting === platform}
+                          disabled={isSuggesting === platform || !generatedContent[platform]}
                         >
                           {isSuggesting === platform ? (
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -490,14 +505,14 @@ export function PostForm() {
         </div>
 
         <div className="flex justify-end gap-2">
-          <Button variant="outline" type="button" onClick={handleSaveDraft} disabled={isSaving || isUploading}>
+          <Button variant="outline" type="button" onClick={() => handleSave('draft')} disabled={isSaving || isUploading}>
             {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
             Guardar Borrador
           </Button>
 
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="critical">
+              <Button variant="critical" disabled={isSaving || isUploading}>
                 <CalendarIcon className="mr-2 h-4 w-4" />
                 Publicar / Programar
               </Button>
@@ -506,20 +521,30 @@ export function PostForm() {
               <div className="p-4 space-y-2">
                 <p className="font-semibold">Programar Publicación</p>
                 <p className="text-sm text-muted-foreground">
-                  Selecciona una fecha y hora para publicar esta publicación.
+                  Opcional. Deja en blanco para publicar ahora.
                 </p>
               </div>
-              <Calendar
-                mode="single"
-                selected={form.watch('schedule')}
-                onSelect={(date) => form.setValue('schedule', date)}
-                initialFocus
+              <FormField
+                control={form.control}
+                name="schedule"
+                render={({ field }) => (
+                   <FormItem>
+                      <FormControl>
+                        <Calendar
+                          mode="single"
+                          selected={field.value}
+                          onSelect={field.onChange}
+                          initialFocus
+                        />
+                      </FormControl>
+                   </FormItem>
+                )}
               />
-              <div className="p-4 border-t flex justify-end gap-2">
-                <Button variant="outline" type="submit">
-                  Publicar Ahora
-                </Button>
-                <Button type="submit">Programar</Button>
+              <div className="p-4 border-t flex justify-end">
+                 <Button type="submit" disabled={isSaving || isUploading}>
+                   {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                   {form.watch('schedule') ? 'Programar Publicación' : 'Publicar Ahora'}
+                 </Button>
               </div>
             </PopoverContent>
           </Popover>
@@ -528,3 +553,5 @@ export function PostForm() {
     </Form>
   );
 }
+
+    

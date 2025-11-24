@@ -20,7 +20,7 @@ export interface Draft {
   status: PostStatus;
   platforms: Platform[];
   mediaUrls: string[];
-  scheduledAt: Date | null;
+  scheduledAt: Date | null; // Firestore Timestamp for scheduled posts
   createdAt: any; // Firestore Timestamp
   updatedAt: any; // Firestore Timestamp
 }
@@ -51,3 +51,5 @@ export interface UserProfile {
   status: UserStatus;
   createdAt: any; // Can be Date or FieldValue
 }
+
+    
