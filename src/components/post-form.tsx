@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import {
   Bot,
   CalendarIcon,
@@ -50,7 +51,7 @@ import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { useAuth, useFirestore, useStorage, useUser } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
+import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from './ui/tooltip';
 
 const CITIES = ['Arica', 'Iquique', 'Antofagasta', 'Calama', 'Tacna'];
 
@@ -342,68 +343,70 @@ export function PostForm() {
                       <div className="mb-4">
                         <FormLabel className="text-base">Plataformas</FormLabel>
                       </div>
-                      <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-                         <FormItem className="flex flex-row items-center space-x-2 space-y-0">
-                           <FormControl><Checkbox checked disabled /></FormControl>
-                           <FormLabel className="font-normal">
-                             <Tooltip>
-                               <TooltipTrigger asChild>
-                                 <Icons.Facebook className="h-5 w-5 text-muted-foreground" />
-                               </TooltipTrigger>
-                               <TooltipContent>Facebook</TooltipContent>
-                             </Tooltip>
-                           </FormLabel>
-                         </FormItem>
-                         <FormItem className="flex flex-row items-center space-x-2 space-y-0">
-                           <FormControl><Checkbox checked disabled /></FormControl>
-                           <FormLabel className="font-normal">
-                             <Tooltip>
-                               <TooltipTrigger asChild>
-                                 <Icons.Instagram className="h-5 w-5 text-muted-foreground" />
-                               </TooltipTrigger>
-                               <TooltipContent>Instagram</TooltipContent>
-                             </Tooltip>
-                           </FormLabel>
-                         </FormItem>
-                         <FormItem className="flex flex-row items-center space-x-2 space-y-0">
-                           <FormControl><Checkbox checked={!!selectedCity} disabled /></FormControl>
-                           <FormLabel className={cn("font-normal", !selectedCity && "opacity-50")}>
-                             <Tooltip>
-                               <TooltipTrigger asChild>
-                                 <Icons.Wordpress className="h-5 w-5" />
-                               </TooltipTrigger>
-                               <TooltipContent>Revista {selectedCity || ''}</TooltipContent>
-                             </Tooltip>
-                           </FormLabel>
-                         </FormItem>
-                         <FormField
-                            control={form.control}
-                            name="platforms"
-                            render={({ field }) => (
-                               <FormItem className="flex flex-row items-center space-x-2 space-y-0">
-                                <FormControl>
-                                  <Checkbox
-                                    checked={field.value?.includes('marketplace')}
-                                    onCheckedChange={(checked) => {
-                                      const newPlatforms = checked
-                                        ? [...field.value, 'marketplace']
-                                        : field.value?.filter(v => v !== 'marketplace');
-                                      field.onChange(newPlatforms);
-                                    }}
-                                  />
-                                </FormControl>
-                                <FormLabel className="font-normal">
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <span className="text-xs font-semibold">.CL</span>
-                                    </TooltipTrigger>
-                                    <TooltipContent>Marketplace Nortedato.cl</TooltipContent>
-                                  </Tooltip>
-                                </FormLabel>
-                              </FormItem>
-                            )}
-                          />
-                      </div>
+                      <TooltipProvider>
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
+                           <FormItem className="flex flex-row items-center space-x-2 space-y-0">
+                             <FormControl><Checkbox checked disabled /></FormControl>
+                             <FormLabel className="font-normal">
+                               <Tooltip>
+                                 <TooltipTrigger asChild>
+                                    <Image src="https://nortedato.cl/wp-content/uploads/2025/10/Facebook.png" alt="Facebook Logo" width={24} height={24} />
+                                 </TooltipTrigger>
+                                 <TooltipContent>Facebook</TooltipContent>
+                               </Tooltip>
+                             </FormLabel>
+                           </FormItem>
+                           <FormItem className="flex flex-row items-center space-x-2 space-y-0">
+                             <FormControl><Checkbox checked disabled /></FormControl>
+                             <FormLabel className="font-normal">
+                               <Tooltip>
+                                 <TooltipTrigger asChild>
+                                   <Image src="https://nortedato.cl/wp-content/uploads/2025/10/Instagram.png" alt="Instagram Logo" width={24} height={24} />
+                                 </TooltipTrigger>
+                                 <TooltipContent>Instagram</TooltipContent>
+                               </Tooltip>
+                             </FormLabel>
+                           </FormItem>
+                           <FormItem className="flex flex-row items-center space-x-2 space-y-0">
+                             <FormControl><Checkbox checked={!!selectedCity} disabled /></FormControl>
+                             <FormLabel className={cn("font-normal", !selectedCity && "opacity-50")}>
+                               <Tooltip>
+                                 <TooltipTrigger asChild>
+                                   <Image src="https://nortedato.cl/wp-content/uploads/2025/10/Logo-Nortedatocl-General-trans.png" alt="Revista Logo" width={24} height={24} className="object-contain" />
+                                 </TooltipTrigger>
+                                 <TooltipContent>Revista {selectedCity || ''}</TooltipContent>
+                               </Tooltip>
+                             </FormLabel>
+                           </FormItem>
+                           <FormField
+                              control={form.control}
+                              name="platforms"
+                              render={({ field }) => (
+                                 <FormItem className="flex flex-row items-center space-x-2 space-y-0">
+                                  <FormControl>
+                                    <Checkbox
+                                      checked={field.value?.includes('marketplace')}
+                                      onCheckedChange={(checked) => {
+                                        const newPlatforms = checked
+                                          ? [...field.value, 'marketplace']
+                                          : field.value?.filter(v => v !== 'marketplace');
+                                        field.onChange(newPlatforms);
+                                      }}
+                                    />
+                                  </FormControl>
+                                  <FormLabel className="font-normal">
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                          <Image src="https://marketplace.nortedato.cl/wp-content/uploads/2025/11/cropped-logo-Marketplace-.png" alt="Marketplace Logo" width={24} height={24} className="object-contain" />
+                                      </TooltipTrigger>
+                                      <TooltipContent>Marketplace Nortedato.cl</TooltipContent>
+                                    </Tooltip>
+                                  </FormLabel>
+                                </FormItem>
+                              )}
+                            />
+                        </div>
+                      </TooltipProvider>
                       <FormMessage />
                     </FormItem>
                   )}
