@@ -20,7 +20,6 @@ import { useUser, useAuth, useFirestore, useDoc, useMemoFirebase } from '@/fireb
 import { signOut } from 'firebase/auth';
 import type { UserProfile } from '@/lib/types';
 import { doc } from 'firebase/firestore';
-import Image from 'next/image';
 
 const navItems = [
   { href: '/dashboard', icon: Icons.Dashboard, label: 'Panel' },
@@ -98,7 +97,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   const isAdmin = userProfile?.role === 'admin';
   const allNavItems = isAdmin ? [...navItems, ...adminNavItems] : navItems;
-
 
   return (
     <div className="flex min-h-screen w-full flex-col">
