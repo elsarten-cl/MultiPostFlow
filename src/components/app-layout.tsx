@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Button } from './ui/button';
 import {
@@ -20,9 +20,10 @@ import { useUser, useAuth, useFirestore, useDoc, useMemoFirebase } from '@/fireb
 import { signOut } from 'firebase/auth';
 import type { UserProfile } from '@/lib/types';
 import { doc } from 'firebase/firestore';
+import Image from 'next/image';
 
 const navItems = [
-  { href: '/', icon: Icons.Dashboard, label: 'Panel' },
+  { href: '/dashboard', icon: Icons.Dashboard, label: 'Panel' },
   { href: '/posts/new', icon: Icons.NewPost, label: 'Nueva Publicación' },
 ];
 
@@ -104,7 +105,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <header className="sticky top-0 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
         <nav className="hidden flex-col gap-6 text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 md:text-sm lg:gap-6">
           <Link
-            href="/"
+            href="/dashboard"
             className="flex items-center gap-2 text-lg font-semibold md:text-base"
           >
             <Bot className="h-6 w-6 text-primary" />

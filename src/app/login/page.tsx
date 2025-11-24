@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -129,7 +130,7 @@ export default function LoginPage() {
         title: '¡Has iniciado sesión!',
         description: 'Redirigiendo al panel...',
       });
-      router.push('/');
+      router.push('/dashboard');
     } catch (error) {
       console.error(`${action} error:`, error);
       const errorMessage = getFirebaseAuthErrorMessage(error as AuthError);
@@ -146,7 +147,12 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-4">
+    <main className="flex min-h-screen flex-col items-center justify-center p-4 bg-background">
+       <div className="absolute top-4 left-4">
+        <Button variant="ghost" asChild>
+          <Link href="/">&larr; Volver al Inicio</Link>
+        </Button>
+      </div>
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4">

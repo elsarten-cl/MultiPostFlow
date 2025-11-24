@@ -1,37 +1,56 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
-import { PlusCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import AppLayout from '@/components/app-layout';
-import PostList from '@/components/post-list';
-import { useUser } from '@/firebase';
+import { ArrowRight } from 'lucide-react';
 
-export default function DashboardPage() {
-  const { user } = useUser();
-
-  // We'll fetch real posts later. For now, an empty array.
-  const posts = [];
-
+export default function HomePage() {
   return (
-    <AppLayout>
-      <div className="flex flex-col gap-8">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Panel</h1>
-            <p className="text-muted-foreground">
-              Gestiona tus publicaciones de redes sociales aquí.
-            </p>
+    <div className="flex flex-col min-h-screen">
+      <header className="p-4 flex justify-end">
+        <Button asChild variant="ghost">
+          <Link href="/login">Iniciar Sesión</Link>
+        </Button>
+      </header>
+      <main className="flex-grow flex items-center justify-center text-center p-4">
+        <div className="flex flex-col items-center gap-8">
+          <Image
+            src="https://marketplace.nortedato.cl/wp-content/uploads/2025/10/Logo-Nortedatocl-General-trans.png"
+            alt="Logo de Nortedato.cl"
+            width={150}
+            height={150}
+            className="object-contain"
+          />
+
+          <div className="flex flex-col items-center gap-2">
+             <h1 className="text-5xl font-bold tracking-tight text-foreground">
+                MultiPostFlow
+             </h1>
+             <div className="flex items-center gap-2">
+                <span className="text-muted-foreground">by</span>
+                <Image
+                    src="https://emprendedores.app/wp-content/uploads/2025/10/Logo-HipeFLow-Banner.png"
+                    alt="Logo de HiperFlow"
+                    width={100}
+                    height={40}
+                    className="object-contain"
+                />
+             </div>
           </div>
-          <Button asChild>
-            <Link href="/posts/new">
-              <PlusCircle />
-              Nueva Publicación
+
+
+          <p className="max-w-xl text-lg text-muted-foreground">
+            La plataforma inteligente para crear, adaptar y distribuir tu contenido en todas tus redes y plataformas con el poder de la IA.
+          </p>
+
+          <Button asChild size="lg">
+            <Link href="/login">
+              Comienza a Publicar <ArrowRight className="ml-2" />
             </Link>
           </Button>
         </div>
-        <PostList posts={posts} />
-      </div>
-    </AppLayout>
+      </main>
+    </div>
   );
 }
