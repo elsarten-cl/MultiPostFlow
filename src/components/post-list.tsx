@@ -23,7 +23,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import type { Post, Platform } from '@/lib/types';
+import type { Draft, Platform } from '@/lib/types';
 import StatusBadge from './status-badge';
 import { Icons } from './icons';
 
@@ -44,7 +44,18 @@ function PlatformIcons({ platforms }: { platforms: Platform[] }) {
 }
 
 
-export default function PostList({ posts }: { posts: Post[] }) {
+export default function PostList({ posts }: { posts: Draft[] }) {
+  
+  const formatDate = (timestamp: any) => {
+    if (!timestamp) return 'No programado';
+    const date = timestamp.toDate();
+    return new Date(date).toLocaleDateString('es-CL', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+    });
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -70,17 +81,23 @@ export default function PostList({ posts }: { posts: Post[] }) {
             </TableRow>
           </TableHeader>
           <TableBody>
+             {posts.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={6} className="h-24 text-center">
+                  Aún no has creado ninguna publicación.
+                </TableCell>
+              </TableRow>
+            )}
             {posts.map((post) => (
               <TableRow key={post.id}>
                 <TableCell className="hidden sm:table-cell">
-                  {post.imageUrl ? (
+                  {post.mediaUrls && post.mediaUrls[0] ? (
                     <Image
                       alt="Imagen de la publicación"
                       className="aspect-square rounded-md object-cover"
                       height="64"
-                      src={post.imageUrl}
+                      src={post.mediaUrls[0]}
                       width="64"
-                      data-ai-hint={post.imageHint}
                     />
                   ) : (
                     <div className="aspect-square h-16 w-16 rounded-md bg-muted flex items-center justify-center">
@@ -96,13 +113,7 @@ export default function PostList({ posts }: { posts: Post[] }) {
                   <PlatformIcons platforms={post.platforms} />
                 </TableCell>
                 <TableCell className="hidden md:table-cell">
-                  {post.scheduledAt
-                    ? new Date(post.scheduledAt).toLocaleDateString('es-CL', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                      })
-                    : 'No programado'}
+                  {formatDate(post.scheduledAt)}
                 </TableCell>
                 <TableCell>
                   <DropdownMenu>

@@ -1,17 +1,27 @@
 'use client';
 
 import Link from 'next/link';
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/components/app-layout';
 import PostList from '@/components/post-list';
-import { useUser } from '@/firebase';
+import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, query, orderBy } from 'firebase/firestore';
+import type { Draft } from '@/lib/types';
 
 export default function DashboardPage() {
   const { user } = useUser();
+  const firestore = useFirestore();
 
-  // We'll fetch real posts later. For now, an empty array.
-  const posts = [];
+  const draftsQuery = useMemoFirebase(() => {
+    if (!user) return null;
+    return query(
+      collection(firestore, 'users', user.uid, 'drafts'),
+      orderBy('createdAt', 'desc')
+    );
+  }, [firestore, user]);
+
+  const { data: posts, isLoading } = useCollection<Draft>(draftsQuery);
 
   return (
     <AppLayout>
@@ -30,7 +40,12 @@ export default function DashboardPage() {
             </Link>
           </Button>
         </div>
-        <PostList posts={posts} />
+        {isLoading && (
+          <div className="flex justify-center items-center h-64">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        )}
+        {!isLoading && <PostList posts={posts || []} />}
       </div>
     </AppLayout>
   );

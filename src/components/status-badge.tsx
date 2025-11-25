@@ -8,6 +8,7 @@ type StatusBadgeProps = {
 };
 
 const statusLabels: Record<PostStatus, string> = {
+  draft: 'Borrador',
   processing: 'Procesando',
   'sent-to-make': 'Enviado a producción',
   published: 'Publicado',
@@ -16,6 +17,7 @@ const statusLabels: Record<PostStatus, string> = {
 };
 
 const statusStyles: Record<PostStatus, string> = {
+  draft: 'bg-gray-500/20 text-gray-600 hover:bg-gray-500/20',
   processing: 'bg-status-processing text-blue-800 hover:bg-status-processing',
   'sent-to-make': 'bg-status-sent-to-make/20 text-status-sent-to-make hover:bg-status-sent-to-make/20',
   published: 'bg-status-published/20 text-status-published hover:bg-status-published/20',

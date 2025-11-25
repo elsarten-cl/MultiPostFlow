@@ -3,6 +3,7 @@ export type Platform = 'facebook' | 'instagram' | 'wordpress' | 'marketplace';
 export const ALL_PLATFORMS: Platform[] = ['facebook', 'instagram', 'wordpress'];
 
 export type PostStatus =
+  | 'draft'
   | 'processing'
   | 'sent-to-make'
   | 'published'
@@ -29,7 +30,7 @@ export interface Draft {
   status: PostStatus;
   platforms: Platform[];
   mediaUrls: string[];
-  scheduledAt: Date | null; // Firestore Timestamp for scheduled posts
+  scheduledAt: any | null; // Firestore Timestamp for scheduled posts
   createdAt: any; // Firestore Timestamp
   updatedAt: any; // Firestore Timestamp
 }
