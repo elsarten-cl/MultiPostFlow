@@ -4,6 +4,7 @@
 /node_modules
 /.pnp
 .pnp.js
+.yarn/install-state.gz
 
 # testing
 /coverage
@@ -25,9 +26,8 @@ yarn-debug.log*
 yarn-error.log*
 
 # local env files
-.env.local
-.env.development.local
-.env.test.local
+.env*.local
+.env
 
 # vercel
 .vercel
@@ -35,3 +35,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Firebase
+/firebase-debug.log
+/firestore-debug.log
+
+# SECURE: Ignore all .env files to prevent API keys from being committed.
+.env*

@@ -11,3 +11,9 @@ runConfig:
 serviceId: multipostflow
 # Required. The region of the Cloud Run service.
 region: us-east4
+
+# Securely provide the Gemini API key to the backend environment.
+# The value will be sourced from Secret Manager.
+secretEnvironmentVariables:
+  - key: GEMINI_API_KEY
+    secret: GEMINI_API_KEY
