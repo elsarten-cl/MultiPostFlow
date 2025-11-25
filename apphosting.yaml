@@ -5,6 +5,11 @@ runConfig:
   # Increase this value if you'd like to automatically spin up
   # more instances in response to increased traffic.
   maxInstances: 1
+  # Add the following to specify the environment variables that should be available
+  # to your app.
+  environment:
+    - variable: GEMINI_API_KEY
+      secret: GEMINI_API_KEY
 
 # Required. The name of the Cloud Run service that App Hosting creates
 # and manages for you.
