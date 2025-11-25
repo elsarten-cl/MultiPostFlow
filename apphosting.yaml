@@ -5,14 +5,15 @@ runConfig:
   # Increase this value if you'd like to automatically spin up
   # more instances in response to increased traffic.
   maxInstances: 1
-  # IMPORTANT: When you add secrets here, you must also grant the principal
-  # 'service-39824240760-compute@gcp-sa-apphosting.iam.gserviceaccount.com'
-  # the 'Secret Manager Secret Accessor' role.
+  # The apphosting.yaml file is checked in to source control, so it should
+  # not contain secrets. Instead, specify the name of the secret in Secret
+  # Manager, and grant the principal 'service-...' the 'Secret Manager
+  # Secret Accessor' role.
   # https://firebase.google.com/docs/app-hosting/configure#set-environment-variables
   #
-  environment:
-    - variable: GEMINI_API_KEY
-      secret: GEMINI_API_KEY
+  # environment:
+  #   - variable: GEMINI_API_KEY
+  #     secret: GEMINI_API_KEY
 
 # Required. The name of the Cloud Run service that App Hosting creates
 # and manages for you.
